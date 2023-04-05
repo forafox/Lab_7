@@ -12,12 +12,16 @@ import collection.LabWork;
 import collection.LabWorkFieldValidation;
 import commands.abstr.Command;
 import commands.abstr.InvocationStatus;
+import database.CollectionDatabaseHandler;
+import database.UserData;
 import exceptions.CannotExecuteCommandException;
 import io.UserIO;
 import workWithFile.LabWorkFieldsReader;
 
 import java.io.PrintStream;
+import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.concurrent.locks.Lock;
 
 /**
  * Команда, добавляющая элемент в коллекцию
@@ -27,6 +31,7 @@ public class InsertElementCommand extends Command{
      * Поле, хранящее ссылку на объект класса CollectionManager.
      */
     private CollectionManager collectionManager;
+    private CollectionDatabaseHandler cdh;
 
     /**
      * Поле, хранящее ссылку на объект, осуществляющий чтение полей из указанного в userIO потока ввода.
@@ -42,6 +47,16 @@ public class InsertElementCommand extends Command{
         this.labWorkFieldsReader=labWorkFieldsReader;
     }
     /**
+     * Конструктор класса, предназначенный для серверной части команды.
+     *
+     * @param collectionManager менеджер коллекции.
+     */
+    public InsertElementCommand(CollectionManager collectionManager, CollectionDatabaseHandler cdh) {
+        this.cdh = cdh;
+        this.collectionManager = collectionManager;
+    }
+
+    /**
      * Конструктор класса, предназначенный для серверной части команды
      * @param collectionManager менеджер коллекции
      */
@@ -55,34 +70,8 @@ public class InsertElementCommand extends Command{
      * @param printStream поток вывода.
      * @param arguments аргументы команды.
      */
-//    @Override
-//    public void execute(String[] arguments, InvocationStatus invocationStatus, PrintStream printStream) throws CannotExecuteCommandException {
-//        if (invocationStatus.equals(InvocationStatus.CLIENT)) {
-//            result = new ArrayList<>();
-//            if (arguments.length != 1) {
-//                throw new CannotExecuteCommandException("Количество аргументов у данной команды должно равняться 1.");
-//            }
-//            if (LabWorkFieldValidation.validate("id", arguments[0])) {
-//                printStream.println("Введите значения полей для элемента коллекции:\n");
-//                LabWork dragon = labWorkFieldsReader.read(Integer.parseInt(arguments[0]));
-//                super.result.add(Integer.parseInt(arguments[0])); //Integer id - result(0), dragon - result(1)
-//                super.result.add(dragon);
-//            } else
-//                throw new CannotExecuteCommandException("Введены невалидные аргументы: id = " + arguments[0]);
-//        } else if (invocationStatus.equals(InvocationStatus.SERVER)) {
-//            LabWork labWork = (LabWork) this.getResult().get(1);
-//            collectionManager.insertWithId((Integer) this.getResult().get(0), labWork, printStream);
-//        }
-//    }
-    /**
-     * Метод, исполняющий команду. При запуске команды запрашивает ввод указанных полей. При успешном выполнении команды на стороне сервера высветится уведомление о добавлении элемента в коллекцию. В случае критической ошибки выполнение команды прерывается.
-     *
-     * @param invocationStatus режим, с которым должна быть исполнена данная команда.
-     * @param printStream поток вывода.
-     * @param arguments аргументы команды.
-     */
     @Override
-    public void execute(String[] arguments, InvocationStatus invocationStatus, PrintStream printStream) throws CannotExecuteCommandException {
+    public void execute(String[] arguments, InvocationStatus invocationStatus, PrintStream printStream, UserData userData, Lock locker) throws CannotExecuteCommandException {
         if (invocationStatus.equals(InvocationStatus.CLIENT)) {
             result = new ArrayList<>();
             if (arguments.length > 1) {
@@ -92,6 +81,7 @@ public class InsertElementCommand extends Command{
                 if (LabWorkFieldValidation.validate("id", arguments[0])) {
                     printStream.println("Введите значения полей для элемента коллекции:\n");
                     LabWork labWork = labWorkFieldsReader.read(Integer.parseInt(arguments[0]));
+                    labWork.setOwner(userData.getLogin());
                     super.result.add(Integer.parseInt(arguments[0])); //Integer id - result(0), dragon - result(1)
                     super.result.add(labWork);
                 } else
@@ -99,15 +89,32 @@ public class InsertElementCommand extends Command{
             }else{
                     printStream.println("Введите значения полей для элемента коллекции:\n");
                     LabWork labWork = labWorkFieldsReader.read();
+                    labWork.setOwner(userData.getLogin());
                     super.result.add(labWork);
             }
         } else if (invocationStatus.equals(InvocationStatus.SERVER)) {
+            try{
+            locker.lock();
             if(result.size()==2) {
                 LabWork labWork = (LabWork) this.getResult().get(1);
-                collectionManager.insertWithId((Integer) this.getResult().get(0), labWork, printStream);
-            }else{
+                if (!cdh.isAnyRowById(labWork.getId())) {
+                    cdh.insertRow(labWork);
+                    collectionManager.insertWithId((Integer) this.getResult().get(0), labWork, printStream);
+                    printStream.println("Элемент добавлен в коллекцию.");
+                }
+            }else {
                 LabWork labWork = (LabWork) this.getResult().get(0);
-                collectionManager.insert(labWork);
+                if (!cdh.isAnyRowById(labWork.getId())) {
+                    labWork.setId(CollectionManager.getRandomId());
+                    cdh.insertRow(labWork);
+                    collectionManager.insert(labWork);
+                    printStream.println("Элемент добавлен в коллекцию.");
+                }
+            }
+        } catch (SQLException e) {
+                throw new RuntimeException(e);
+            } finally {
+                locker.unlock();
             }
         }
     }

@@ -11,10 +11,14 @@ import collection.CollectionManager;
 import collection.LabWorkFieldValidation;
 import commands.abstr.Command;
 import commands.abstr.InvocationStatus;
+import database.CollectionDatabaseHandler;
+import database.UserData;
 import exceptions.CannotExecuteCommandException;
 
 import java.io.PrintStream;
+import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.concurrent.locks.Lock;
 
 /**
  * Команда, удаляющая из коллекции элементы с ключем, меньше чем заданный
@@ -24,6 +28,7 @@ public class RemoveLowerKeyCommand extends Command {
      * Поле, хранящее ссылку на объект класса CollectionManager.
      */
     private CollectionManager collectionManager;
+    private CollectionDatabaseHandler cdh;
 
     /**
      * Конструктор класса.
@@ -32,7 +37,8 @@ public class RemoveLowerKeyCommand extends Command {
         super("remove_lower_key");
     }
 
-    public RemoveLowerKeyCommand(CollectionManager collectionManager) {
+    public RemoveLowerKeyCommand(CollectionManager collectionManager, CollectionDatabaseHandler cdh) {
+        this.cdh=cdh;
         this.collectionManager = collectionManager;
     }
 
@@ -43,7 +49,7 @@ public class RemoveLowerKeyCommand extends Command {
      * @param arguments аргументы команды.
      */
     @Override
-    public void execute(String[] arguments, InvocationStatus invocationEnum, PrintStream printStream) throws CannotExecuteCommandException {
+    public void execute(String[] arguments, InvocationStatus invocationEnum, PrintStream printStream, UserData userData, Lock locker) throws CannotExecuteCommandException {
         if (invocationEnum.equals(InvocationStatus.CLIENT)) {
             result = new ArrayList<>();
             if (arguments.length != 1) {
@@ -56,8 +62,22 @@ public class RemoveLowerKeyCommand extends Command {
             }
         } else if (invocationEnum.equals(InvocationStatus.SERVER)) {
             Integer id = (Integer) this.getResult().get(0);
-            collectionManager.removeLowerKey(id);
-            printStream.println("Элементы с id < " + id + " были удалены");
+            try {
+                locker.lock();
+
+                Integer[] keys = collectionManager.getLowerKeys(id);
+                for (Integer key : keys) {
+                    if (cdh.isOwner(id, userData)) {
+                        cdh.deleteRowById(key);
+                        collectionManager.removeKey(key);
+                    }
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            } finally {
+                locker.unlock();
+            }
+            printStream.println("Элементы с id < " + id + " были удалены, принадлежащие пользователю " + userData.getLogin());
         }
     }
 

@@ -9,6 +9,7 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author Karabanov Andrey
@@ -34,6 +35,12 @@ public class CollectionManager {
      */
     public CollectionManager() {
         this.treeMap = new TreeMap<>();
+        String i = Instant.now().toString();
+        collectionInitialization = ZonedDateTime.parse(i);
+    }
+    public CollectionManager(LabWork[] labWorks) {
+        this.treeMap = new TreeMap<>();
+        Arrays.stream(labWorks).forEach(labWork -> treeMap.put(labWork.getId(), labWork));
         String i = Instant.now().toString();
         collectionInitialization = ZonedDateTime.parse(i);
     }
@@ -118,7 +125,7 @@ public class CollectionManager {
     /**
      * Группировка по полю difficult элементов коллекции
      */
-    public String GroupCountingByDifficult(){
+    public String groupCountingByDifficult(){
         int countVERY_EASY=0;
         int countEASY=0;
         int countVERY_HARD=0;
@@ -165,6 +172,11 @@ public class CollectionManager {
         while(treeMap.containsKey(i)){
              i =(int)(Math.random() * max);
         }
+        return i;
+    }
+    public static int getRandomId(){
+        int max=10000;
+        int i =(int)(Math.random() * max);
         return i;
     }
     /**
@@ -345,18 +357,35 @@ public class CollectionManager {
                 Arrays.toString(Difficulty.values())+"\nPersonName (String)\nPersonHeight (Float)" +
                 "\nPersonPassportID (String)\nLocationX (Int)\nLocationY (Float)\nLocationName (String)\n";
     }
+    public Integer[] getLowerKeys(Integer id){
+        ArrayList<Integer> keys = new ArrayList<>();
 
+        treeMap.entrySet().stream().filter(mapEntry -> mapEntry.getKey() < id)
+                .forEach(mapEntry -> keys.add(mapEntry.getKey()));
+
+        return keys.toArray(new Integer[0]);
+    }
+    public Integer[] getGreaterKeys(Integer id){
+        ArrayList<Integer> keys = new ArrayList<>();
+
+        treeMap.entrySet().stream().filter(mapEntry -> mapEntry.getKey() > id)
+                .forEach(mapEntry -> keys.add(mapEntry.getKey()));
+
+        return keys.toArray(new Integer[0]);
+    }
     /**
      * Метод удаляет элементы коллекции,с полем ( id) выше, чем у заданного поля (id)
      * @param id уникальный идентификатор элемента коллекции (ключ)
      */
     public void removeGreaterKey(Integer id){
-        ArrayList<Integer> keys = new ArrayList<>();
-        for (Map.Entry<Integer, LabWork> entry : treeMap.entrySet()) {
-            if (entry.getKey() > id) keys.add(entry.getKey());
-        }
-        for (Integer key : keys) {
-            treeMap.remove(key);
-        }
+        List<Map.Entry<Integer, LabWork>> kek = treeMap.entrySet().stream()
+                .filter( (Map.Entry<Integer, LabWork> test) -> {
+                    return test.getKey() > id;
+                })
+                .collect(Collectors.toList());
+
+        kek.forEach( (it) -> {
+            treeMap.remove(it.getKey());
+        });
     }
 }

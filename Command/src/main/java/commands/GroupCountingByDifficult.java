@@ -9,9 +9,11 @@ package commands;
 import collection.CollectionManager;
 import commands.abstr.Command;
 import commands.abstr.InvocationStatus;
+import database.UserData;
 import exceptions.CannotExecuteCommandException;
 
 import java.io.PrintStream;
+import java.util.concurrent.locks.Lock;
 
 /**
  * Команда, выводящая элементы коллекции с группировкой по полю difficult
@@ -36,7 +38,7 @@ public class GroupCountingByDifficult extends Command {
         this.collectionManager = collectionManager;
     }
     /**
-     * Метод, исполняющий команду. В случае выполнения выведится кол-во элементов с группировкой по полю difficulty
+     * Метод, исполняющий команду. В случае выполнения выводится кол-во элементов с группировкой по полю difficulty
      * В случае неудачи высветится прудепреждение
      * @param arguments аргументы команды
      * @param invocationEnum режим работы команды
@@ -44,14 +46,13 @@ public class GroupCountingByDifficult extends Command {
      * @throws CannotExecuteCommandException
      */
     @Override
-    public void execute(String[] arguments, InvocationStatus invocationEnum, PrintStream printStream) throws CannotExecuteCommandException {
+    public void execute(String[] arguments, InvocationStatus invocationEnum, PrintStream printStream, UserData userData, Lock locker) throws CannotExecuteCommandException {
         if (invocationEnum.equals(InvocationStatus.CLIENT)) {
             if (arguments.length > 0) {
                 throw new CannotExecuteCommandException("У данной команды нет аргументов.");
             }
         } else if (invocationEnum.equals(InvocationStatus.SERVER)) {
-            collectionManager.clear();
-            printStream.println(collectionManager.GroupCountingByDifficult());
+            printStream.println(collectionManager.groupCountingByDifficult());
         }
     }
     /**

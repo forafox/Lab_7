@@ -1,9 +1,6 @@
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.xml.parsers.ParserConfigurationException;
-import java.io.IOException;
-
 /**
  * @author Karabanov Andrey
  * @version 1.0
@@ -11,39 +8,32 @@ import java.io.IOException;
  */
 public class MainServer {
     private static final Logger rootLogger = LogManager.getRootLogger();
-    public static void main(String[] args){
-        Application application = new Application();
 
-        if (args.length > 0) {
-            if (!args[0].equals("")) {
-                System.out.println("Старт с аргументом");
-                Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                    rootLogger.info("Сохранение коллекции в файле.");
-                    application.getCollectionManager().save(args[0]);
-                    rootLogger.info("Коллекция была сохранена "+ args[0]);
-                    try {
-                        Thread.sleep(100);
-                    } catch (InterruptedException ex) {
-                        Thread.currentThread().interrupt();
-                        rootLogger.error("Ошибка с потоками: "+ ex);
-                    }
-                    rootLogger.info("Завершение работы сервера.");
-                }));
-                try {
-                    application.start(args[0]);
-                } catch (ParserConfigurationException | IOException | org.xml.sax.SAXException ex) {
-                    rootLogger.warn("По указанному адресу нет подходящего файла "+ args[0]);
-                }
-            }
+    public static void main(String[] args) {
+
+        try {
+            Class.forName("org.postgresql.Driver");
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
         }
-        else {
-            System.out.println("Старт без аргумента");
-            String file = "D:\\JavaProject\\Lab_6\\inputFiles\\testInputFile";
+
+        Application application = new Application();
+        if (args.length > 0) {
             try {
-                application.start(file);
-            } catch (ParserConfigurationException | IOException | org.xml.sax.SAXException ex ) {
-                rootLogger.warn("По указанному адресу нет подходящего файла " + file);
+                int port = Integer.parseInt(args[0]);
+                if (port <= 0) {
+                    throw new IllegalArgumentException();
+                } else {
+                    System.out.println("Порт установлен: " + port);
+                    application.start(port);
+                }
+            } catch (NumberFormatException ex) {
+                rootLogger.error("Введенный порт должен быть числом. Завершение работы сервера.");
+            } catch (IllegalArgumentException ex) {
+                rootLogger.error("Порт должен быть больше нуля.");
             }
+        } else {
+            rootLogger.error("Должен быть указан порт, к которому подключаться");
         }
     }
 }

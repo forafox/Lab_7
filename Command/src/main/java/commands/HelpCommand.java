@@ -8,10 +8,12 @@ package commands;
 
 import commands.abstr.Command;
 import commands.abstr.InvocationStatus;
+import database.UserData;
 import exceptions.CannotExecuteCommandException;
 
 import java.io.PrintStream;
 import java.util.HashMap;
+import java.util.concurrent.locks.Lock;
 
 /**
  * Класс команды, которая выводит описания всех команд, реализованных в программе.
@@ -37,7 +39,7 @@ public class HelpCommand extends Command {
      * @param printStream поток вывода.
      * @param arguments аргументы команды.
      */
-    public void execute(String[] arguments, InvocationStatus invocationEnum, PrintStream printStream) throws CannotExecuteCommandException {
+    public void execute(String[] arguments, InvocationStatus invocationEnum, PrintStream printStream, UserData userData, Lock locker) throws CannotExecuteCommandException {
         if (invocationEnum.equals(InvocationStatus.CLIENT)) {
             if (arguments.length > 0) {
                 throw new CannotExecuteCommandException("У данной команды нет аргументов.");

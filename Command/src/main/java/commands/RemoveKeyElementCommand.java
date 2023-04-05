@@ -12,10 +12,14 @@ import collection.CollectionManager;
 import collection.LabWorkFieldValidation;
 import commands.abstr.Command;
 import commands.abstr.InvocationStatus;
+import database.CollectionDatabaseHandler;
+import database.UserData;
 import exceptions.CannotExecuteCommandException;
 
 import java.io.PrintStream;
+import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.concurrent.locks.Lock;
 
 /**
  * Команда, удаляющая элемент по ключу
@@ -26,6 +30,8 @@ public class RemoveKeyElementCommand extends Command {
      */
     private CollectionManager collectionManager;
 
+    private CollectionDatabaseHandler cdh;
+
     /**
      * Конструктор класса.
      */
@@ -33,8 +39,9 @@ public class RemoveKeyElementCommand extends Command {
         super("remove_key");
     }
 
-    public RemoveKeyElementCommand(CollectionManager collectionManager) {
+    public RemoveKeyElementCommand(CollectionManager collectionManager, CollectionDatabaseHandler cdh) {
         this.collectionManager = collectionManager;
+        this.cdh=cdh;
     }
 
     /**
@@ -44,7 +51,7 @@ public class RemoveKeyElementCommand extends Command {
      * @param arguments аргументы команды.
      */
     @Override
-    public void execute(String[] arguments, InvocationStatus invocationEnum, PrintStream printStream) throws CannotExecuteCommandException {
+    public void execute(String[] arguments, InvocationStatus invocationEnum, PrintStream printStream, UserData userData, Lock locker) throws CannotExecuteCommandException, SQLException {
         if (invocationEnum.equals(InvocationStatus.CLIENT)) {
             result = new ArrayList<>();
             if (arguments.length != 1) {
@@ -55,13 +62,18 @@ public class RemoveKeyElementCommand extends Command {
             result.add(Integer.parseInt(arguments[0]));
         } else if (invocationEnum.equals(InvocationStatus.SERVER)) {
             Integer id = (Integer) this.getResult().get(0);
-            if (collectionManager.containsKey(id)) {
-                collectionManager.removeKey(id);
-                printStream.println("Элемент с id = " + id + " был удален.");
-            } else printStream.println("Элемента с указанным id не существует.");
+            try {
+                locker.lock();
+                if (cdh.isOwner(id, userData)) {
+                    cdh.deleteRowById(id);
+                    collectionManager.removeKey(id);
+                    printStream.println("Элемент с id = " + id + " был удален.");
+                } else printStream.println("Элемента с указанным id не существует.");
+            } finally {
+                locker.unlock();
+            }
         }
     }
-
     /**
      * Метод, возвращающий описание команды.
      *

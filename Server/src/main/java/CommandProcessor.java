@@ -1,5 +1,8 @@
 import commands.CommandInvoker;
 import commands.abstr.CommandContainer;
+import database.CollectionDatabaseHandler;
+import database.UserData;
+import database.UserDatabaseHandler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -11,31 +14,41 @@ import java.io.PrintStream;
  * @date 25.03.2023 18:11
  */
 public class CommandProcessor {
-    private final CommandInvoker commandInvoker;
-
     private static final Logger rootLogger = LogManager.getRootLogger();
 
-    /**
-     * Конструктор класса
-     * @param commandInvoker
-     */
+    private final CommandInvoker commandInvoker;
 
-    public CommandProcessor(CommandInvoker commandInvoker) {
+    private final UserDatabaseHandler udh;
+    private final CollectionDatabaseHandler cdh;
+
+    public CommandProcessor(UserDatabaseHandler userDatabaseHandler, CollectionDatabaseHandler collectionDatabaseHandler, CommandInvoker commandInvoker) {
+        this.udh = userDatabaseHandler;
+        this.cdh = collectionDatabaseHandler;
         this.commandInvoker = commandInvoker;
     }
 
-    /**
-     * Метод исполнения команды
-     * @param command
-     * @param printStream
-     */
+    public void executeCommand(CommandContainer command, PrintStream printStream, UserData userData) {
 
-    public void executeCommand(CommandContainer command, PrintStream printStream) {
-
-        if (commandInvoker.executeServer(command.getName(), command.getResult(), printStream)) {
+        if (commandInvoker.executeServer(command.getName(), command.getResult(), printStream, userData)) {
             rootLogger.info("Была исполнена команда " + command.getName());
         } else {
             rootLogger.info("Не была исполнена команда " + command.getName());
         }
+    }
+
+    public void putCommandArguments(PrintStream printStream, UserData userData) {
+
+    }
+
+    public UserDatabaseHandler getUdh() {
+        return udh;
+    }
+
+    public CollectionDatabaseHandler getCdh() {
+        return cdh;
+    }
+
+    public CommandInvoker getCommandInvoker() {
+        return commandInvoker;
     }
 }

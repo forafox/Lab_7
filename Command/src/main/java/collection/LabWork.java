@@ -55,6 +55,7 @@ public class LabWork implements Serializable {
      * Автор работы Поле может быть null
      */
     private Person person;
+    private String user_login;
 
     /**
      * Конструктор класса с параметрами (без id)
@@ -103,6 +104,13 @@ public class LabWork implements Serializable {
         this.personalQualitiesMaximum = personalQualitiesMaximum;
         this.difficulty = difficulty;
         this.person = person;
+    }
+    public static LabWork createLabWork(Integer id, String name, Coordinates coordinates, ZonedDateTime creationDate,
+                                        Integer minimalPoint, Double maximumPoint, Integer personalQualitiesMaximum,
+                                        Difficulty difficulty, Person person,String owner){
+        LabWork labWork=new LabWork(id,name,coordinates,creationDate,minimalPoint,maximumPoint,personalQualitiesMaximum,difficulty,person);
+        labWork.setOwner(owner);
+        return labWork;
     }
 
     /**
@@ -173,8 +181,8 @@ public class LabWork implements Serializable {
      * Метод, возращающий дату создания  объекта
      * @return creationDate значение поля creationDate
      */
-    public String getCreationDate(){
-        return ""+creationDate;
+    public ZonedDateTime  getCreationDate(){
+        return creationDate;
     }
     /**
      * Метод, возращающий отформатированиую дату создания объекта
@@ -262,6 +270,13 @@ public class LabWork implements Serializable {
      */
     public void setPerson(Person person) {
         this.person = person;
+    }
+
+    public String getOwner(){
+        return user_login;
+    }
+    public void setOwner(String owner){
+        this.user_login=owner;
     }
 
     /**

@@ -52,6 +52,10 @@ public class XmlParser {
          */
         private ArrayList<LabWork> labWorks = new ArrayList<>();
         /**
+         * Хранит поле id объекта класса LabWork
+         */
+        private int id;
+        /**
          * Хранит поле name объекта класса LabWork
          */
         private String name;
@@ -141,6 +145,8 @@ public class XmlParser {
             try {
                 if (!information.isEmpty()) {
                     switch (lastElementName) {
+                        case "id":
+                            id=Integer.parseInt(information);
                         case "name":
                             name = information;
                             break;
@@ -224,7 +230,7 @@ public class XmlParser {
                     Person person = new Person(personName,personHeight,personPassportID,location);
 
 
-                    LabWork labWork = new LabWork(name,coordinates,creationDate,minimalPoint,maximumPoint,personalQualitiesMaximum,difficulty,person);
+                    LabWork labWork = new LabWork(id,name,coordinates,creationDate,minimalPoint,maximumPoint,personalQualitiesMaximum,difficulty,person);
 
                     labWorks.add(labWork);
                 } else System.err.println("Указаны не все параметры, либо параметры не принадлежат допустимой ОДЗ");
@@ -258,8 +264,9 @@ public class XmlParser {
         sb.append("<?xml version = \"1.0\"?>\n");
         sb.append("<treemap>\n");
         for (LabWork labWork : labWorks) {
-            sb.append("\t<LabWork>\n");
-            sb.append("\t\t<name>").append(labWork.getName()).append("</name>");
+            sb.append("\t<LabWork>");
+            sb.append("\n\t\t<id>").append(labWork.getId()).append("</id>");
+            sb.append("\n\t\t<name>").append(labWork.getName()).append("</name>");
             sb.append("\n\t\t<coordinate_x>").append(labWork.getCoordinates().getX()).append("</coordinate_x>");
             try {
                 Double y = labWork.getCoordinates().getY();

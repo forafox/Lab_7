@@ -6,6 +6,8 @@ import collection.CollectionManager;
 import commands.abstr.Command;
 import commands.abstr.CommandContainer;
 import commands.abstr.InvocationStatus;
+import database.CollectionDatabaseHandler;
+import database.UserData;
 import exceptions.CannotExecuteCommandException;
 import exceptions.RecursiveCallException;
 import io.UserIO;
@@ -15,6 +17,7 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Scanner;
+import java.util.concurrent.locks.Lock;
 
 /**
  * @author Karabanov Andrey
@@ -27,11 +30,13 @@ import java.util.Scanner;
  */
 public class ExecuteScriptCommand extends Command {
 
+
     /**
      * Поле, хранящее ссылку на объект класса CollectionManager.
      */
     private CollectionManager collectionManager;
 
+    private CollectionDatabaseHandler cdh;
     /**
      * Поле, хранящее ссылку на объект класса UserIO.
      */
@@ -55,7 +60,7 @@ public class ExecuteScriptCommand extends Command {
     /**
      * Конструктор класса, предназначенный для клиентской части команды.
      *
-     * @param userIO читает данные из указанного потока.
+     * @param userIO             читает данные из указанного потока.
      * @param labWorkFieldsReader Хранит ссылку на объект, осуществляющий чтение полей из указанного в userIO потока ввода.
      * @param script             Хранит объект класса ExecuteScript.Script, из которого нам следует получить список адресов скриптов.
      */
@@ -68,9 +73,11 @@ public class ExecuteScriptCommand extends Command {
 
     /**
      * Конструктор класса, предназначенный для серверной части команды.
+     *
      * @param collectionManager менеджер коллекции.
      */
-    public ExecuteScriptCommand(CollectionManager collectionManager) {
+    public ExecuteScriptCommand(CollectionManager collectionManager, CollectionDatabaseHandler cdh) {
+        this.cdh = cdh;
         this.collectionManager = collectionManager;
     }
 
@@ -78,11 +85,11 @@ public class ExecuteScriptCommand extends Command {
      * Метод, исполняющий команду. В коллекцию scripts при начале исполнения добавляется адрес скрипта, далее идет само его исполнение, в конце адрес файла удаляется. В случае ошибки выводится соответствующее сообщение.
      * На сервере полученные данные переводятся в команды с необходимыми аргументами, которые потом исполняются.
      *
-     * @param arguments аргументы команды.
+     * @param arguments      аргументы команды.
      * @param invocationEnum режим, с которым должна быть исполнена команда.
-     * @param printStream поток вывода.
+     * @param printStream    поток вывода.
      */
-    public void execute(String[] arguments, InvocationStatus invocationEnum, PrintStream printStream) throws CannotExecuteCommandException {
+    public void execute(String[] arguments, InvocationStatus invocationEnum, PrintStream printStream, UserData userData, Lock locker) throws CannotExecuteCommandException {
         if (invocationEnum.equals(InvocationStatus.CLIENT)) {
             result = new ArrayList<>();
             try {
@@ -110,7 +117,7 @@ public class ExecuteScriptCommand extends Command {
                 }));
 
                 while (scanner.hasNext()) {
-                    if (commandInvoker.executeClient(scanner.nextLine(), nullStream)) {
+                    if (commandInvoker.executeClient(scanner.nextLine(), nullStream, userData)) {
                         super.result.add(commandInvoker.getLastCommandContainer());
                     }
                 }
@@ -121,7 +128,7 @@ public class ExecuteScriptCommand extends Command {
             } catch (NullPointerException ex) {
                 printStream.println("Не выбран файл, из которого читать скрипт");
             } catch (IOException ex) {
-                printStream.println("Доступ к файлу невозможен");
+                printStream.println("Доступ к файлу невозможен. У адреса до файла не должно быть кавычек.");
             } catch (IllegalArgumentException ex) {
                 printStream.println("скрипт не передан в качестве аргумента команды, либо кол-во агрументов больше 1");
             } catch (RecursiveCallException ex) {
@@ -135,16 +142,15 @@ public class ExecuteScriptCommand extends Command {
             arr = Arrays.copyOfRange(arr, 1, arr.length);
             CommandContainer[] containerArray = Arrays.copyOf(arr, arr.length, CommandContainer[].class);
 
-            CommandInvoker commandInvoker = new CommandInvoker(collectionManager);
+            CommandInvoker commandInvoker = new CommandInvoker(collectionManager, cdh, locker);
             for (CommandContainer command : containerArray) {
-                commandInvoker.executeServer(command.getName(), command.getResult(), printStream);
+                commandInvoker.executeServer(command.getName(), command.getResult(), printStream, userData);
             }
         }
     }
 
     /**
      * @return Описание команды execute_script.
-     *
      * @see HelpCommand
      */
     @Override

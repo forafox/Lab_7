@@ -19,7 +19,7 @@ public class ClientConnection {
         try {
             clientChannel = DatagramChannel.open();//Открывает новый канал для одного адреса
 
-            clientChannel.configureBlocking(false);//неблокирующий режим???
+            clientChannel.configureBlocking(false);//неблокирующий режим
 
             clientChannel.connect(inetServerAddress);//явное подключение
         } catch (IllegalArgumentException ex) {

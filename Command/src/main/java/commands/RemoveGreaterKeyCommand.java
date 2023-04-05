@@ -12,10 +12,14 @@ import collection.CollectionManager;
 import collection.LabWorkFieldValidation;
 import commands.abstr.Command;
 import commands.abstr.InvocationStatus;
+import database.CollectionDatabaseHandler;
+import database.UserData;
 import exceptions.CannotExecuteCommandException;
 
 import java.io.PrintStream;
+import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.concurrent.locks.Lock;
 
 /**
  * Команда, удаляющая элементы коллекции, превыщающие заданный ключ
@@ -25,7 +29,7 @@ public class RemoveGreaterKeyCommand extends Command {
      * Поле, хранящее ссылку на объект класса CollectionManager.
      */
     private CollectionManager collectionManager;
-
+    private CollectionDatabaseHandler cdh;
     /**
      * Конструктор класса
      */
@@ -36,7 +40,8 @@ public class RemoveGreaterKeyCommand extends Command {
      * Конструктор класса с аргументом
      * @param collectionManager Хранит ссылку на созданный в объекте Application объект CollectionManager.
      */
-    public RemoveGreaterKeyCommand(CollectionManager collectionManager) {
+    public RemoveGreaterKeyCommand(CollectionManager collectionManager,CollectionDatabaseHandler cdh) {
+        this.cdh=cdh;
         this.collectionManager=collectionManager;
     }
 
@@ -47,7 +52,7 @@ public class RemoveGreaterKeyCommand extends Command {
      * @param arguments аргументы команды.
      */
     @Override
-    public void execute(String[] arguments, InvocationStatus invocationEnum, PrintStream printStream) throws CannotExecuteCommandException {
+    public void execute(String[] arguments, InvocationStatus invocationEnum, PrintStream printStream, UserData userData, Lock locker) throws CannotExecuteCommandException, SQLException {
         if (invocationEnum.equals(InvocationStatus.CLIENT)) {
             result = new ArrayList<>();
             if (arguments.length != 1) {
@@ -60,8 +65,20 @@ public class RemoveGreaterKeyCommand extends Command {
             }
         } else if (invocationEnum.equals(InvocationStatus.SERVER)) {
             Integer id = (Integer) this.getResult().get(0);
-            collectionManager.removeGreaterKey(id);
-            printStream.println("Элементы с id > " + id + " были удалены");
+            try {
+                locker.lock();
+
+                Integer[] keys = collectionManager.getGreaterKeys(id);
+                for (Integer key : keys) {
+                    if (cdh.isOwner(id, userData)) {
+                        cdh.deleteRowById(key);
+                        collectionManager.removeKey(key);
+                    }
+                }
+            } finally {
+                locker.unlock();
+            }
+            printStream.println("Элементы с id < " + id + " были удалены, принадлежащие пользователю " + userData.getLogin());
         }
     }
 

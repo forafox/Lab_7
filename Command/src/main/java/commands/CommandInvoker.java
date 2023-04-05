@@ -12,15 +12,19 @@ import collection.CollectionManager;
 import commands.abstr.Command;
 import commands.abstr.CommandContainer;
 import commands.abstr.InvocationStatus;
+import database.CollectionDatabaseHandler;
+import database.UserData;
 import exceptions.CannotExecuteCommandException;
 import io.UserIO;
 import workWithFile.LabWorkFieldsReader;
 
 import java.io.PrintStream;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Locale;
+import java.util.concurrent.locks.Lock;
 
 /**
  * Класс, через который осуществляется исполнение команд. Хранит коллекции всех существующих команд.
@@ -66,6 +70,8 @@ public class CommandInvoker {
     /**
      * Поле, хранящее список команд
      */
+    private Lock locker;
+    private CollectionDatabaseHandler cdh;
     ArrayList<String> commandsHistoryList = new ArrayList<>();
 
     /**
@@ -84,9 +90,10 @@ public class CommandInvoker {
     }
     /**
      * Конструктор класса, предназначенный для исполнения скрипта на клиенте.
-     * @param userIO читает данные из указанного потока.
+     *
+     * @param userIO             читает данные из указанного потока.
      * @param labWorkFieldsReader осуществляет чтение полей, валидацию и преобразование в объект класса Dragon.
-     * @param script скрипт, хранит пути до файлов, из которых считывать команды.
+     * @param script             скрипт, хранит пути до файлов, из которых считывать команды.
      */
     public CommandInvoker(UserIO userIO, LabWorkFieldsReader labWorkFieldsReader, ExecuteScriptCommand.Script script) {
         this.clientCommands = new HashMap<>();
@@ -97,34 +104,20 @@ public class CommandInvoker {
 
         this.putClientCommands();
     }
+
     /**
      * Конструктор класса, предназначенный для сервера.
      *
      * @param collectionManager менеджер коллекции.
-     * @param inputFile файл, куда следует сохранять коллекцию по завершении работы сервера.
      */
-    public CommandInvoker(CollectionManager collectionManager, String inputFile) {
+    public CommandInvoker(CollectionManager collectionManager, CollectionDatabaseHandler cdh, Lock locker) {
         this.serverCommands = new HashMap<>();
 
         this.collectionManager = collectionManager;
 
-        this.inputFile = inputFile;
-
-        script = new ExecuteScriptCommand.Script();
-
+        this.cdh = cdh;
         this.putServerCommands();
-        System.out.println("Элементы коллекции для сервера были загружены");
-    }
-    /**
-     * Конструктор класса, предназначенный для сервера.
-     * @param collectionManager менеджер коллекции.
-     */
-    public CommandInvoker(CollectionManager collectionManager) {
-        this.serverCommands = new HashMap<>();
-
-        this.collectionManager = collectionManager;
-
-        this.putServerCommands();
+        this.locker = locker;
     }
     /**
      * Метод, добавляющий клиентские команды в соответствующую коллекции.
@@ -137,7 +130,7 @@ public class CommandInvoker {
         clientCommands.put("help", new HelpCommand(clientCommands));
 
         clientCommands.put("insert", new InsertElementCommand(labWorkFieldsReader));
-        clientCommands.put("update", new UpdateElementCommand(userIO));
+      //clientCommands.put("update", new UpdateElementCommand(userIO));
         clientCommands.put("remove_key", new RemoveKeyElementCommand());
         clientCommands.put("execute_script", new ExecuteScriptCommand(userIO, labWorkFieldsReader, script));
         clientCommands.put("remove_lower_key", new RemoveLowerKeyCommand());
@@ -153,20 +146,20 @@ public class CommandInvoker {
     private void putServerCommands() {
         serverCommands.put("info", new InfoCommand(collectionManager));//y
         serverCommands.put("show", new ShowCommand(collectionManager));//y
-        serverCommands.put("clear", new ClearCommand(collectionManager));//y
+        serverCommands.put("clear", new ClearCommand(collectionManager,cdh));//y
         serverCommands.put("save", new SaveCommand(collectionManager, inputFile));//y
         serverCommands.put("help", new HelpCommand(serverCommands));//y
-//
-        serverCommands.put("insert", new InsertElementCommand(collectionManager));//y
-        serverCommands.put("update", new UpdateElementCommand(collectionManager));//y
-        serverCommands.put("remove_key", new RemoveKeyElementCommand(collectionManager));//y
-        serverCommands.put("remove_greater_key",new RemoveGreaterKeyCommand(collectionManager));
-        serverCommands.put("remove_lower_key", new RemoveLowerKeyCommand(collectionManager));
+
+        serverCommands.put("insert", new InsertElementCommand(collectionManager,cdh));//y
+      //serverCommands.put("update", new UpdateElementCommand(collectionManager,cdh));//y
+        serverCommands.put("remove_key", new RemoveKeyElementCommand(collectionManager,cdh));//y
+        serverCommands.put("remove_greater_key",new RemoveGreaterKeyCommand(collectionManager,cdh));
+        serverCommands.put("remove_lower_key", new RemoveLowerKeyCommand(collectionManager,cdh));
         serverCommands.put("print_field_descending_author",new PrintFieldDescendingAuthor(collectionManager));
         serverCommands.put("print_field_ascending_difficulty",new PrintFieldAscendingDifficultyCommand(collectionManager));
         serverCommands.put("group_counting_by_difficulty",new GroupCountingByDifficult(collectionManager));
         serverCommands.put("history", new HistoryCommand(commandsHistoryList));
-        serverCommands.put("execute_script", new ExecuteScriptCommand(collectionManager));
+        serverCommands.put("execute_script", new ExecuteScriptCommand(collectionManager,cdh));
     }
     /**
      * Метод, который определяет из полученной строки команду со стороны клиента, исполняет ее и передает ей необходимые аргументы.
@@ -177,7 +170,7 @@ public class CommandInvoker {
      *
      * @return boolean: true - команда исполнена, false - команда не исполнена.
      */
-    public boolean executeClient(String firstCommandLine, PrintStream printStream) {
+    public boolean executeClient(String firstCommandLine, PrintStream printStream, UserData userData) {
 
         String[] words = firstCommandLine.trim().split("\\s+");
         String[] arguments = Arrays.copyOfRange(words, 1, words.length);
@@ -187,7 +180,7 @@ public class CommandInvoker {
                 Command command;
                 command = clientCommands.get(words[0].toLowerCase(Locale.ROOT));
 
-                command.execute(arguments, InvocationStatus.CLIENT, printStream);
+                command.execute(arguments, InvocationStatus.CLIENT, printStream, userData, null);
                 lastCommandContainer = new CommandContainer(command.getName(), command.getResult());
                 return true;
             }
@@ -195,6 +188,7 @@ public class CommandInvoker {
             ex.printStackTrace();
         } catch (CannotExecuteCommandException ex) {
             printStream.println(ex.getMessage());
+        } catch (SQLException ignored) {
         }
         return false;
     }
@@ -208,7 +202,7 @@ public class CommandInvoker {
      *
      * @return boolean: true - команда исполнена, false - команда не исполнена.
      */
-    public boolean executeServer(String firstCommandLine, ArrayList<Object> result, PrintStream printStream) {
+    public boolean executeServer(String firstCommandLine, ArrayList<Object> result, PrintStream printStream, UserData userData) {
 
         String[] words = firstCommandLine.trim().split("\\s+");
         String[] arguments = Arrays.copyOfRange(words, 1, words.length);
@@ -218,14 +212,17 @@ public class CommandInvoker {
                 command = serverCommands.get(words[0].toLowerCase(Locale.ROOT));
 
                 command.setResult(result);
-                command.execute(arguments, InvocationStatus.SERVER, printStream); //throws CannotExecuteCommandException
+                command.execute(arguments, InvocationStatus.SERVER, printStream, userData, locker); //throws CannotExecuteCommandException
+                this.addToCommandsHistory(userData.getCommandContainer().getName());
                 return true;
             }
         } catch (NullPointerException ex) {
-            System.out.println("Команда " + words[0] + " не распознана, для получения справки введите команду help");
-            ex.printStackTrace();
+            printStream.println("Команда " + words[0] + " не распознана, для получения справки введите команду help");
+
         } catch (CannotExecuteCommandException ex) {
             System.out.println(ex.getMessage());
+        } catch (SQLException ex) {
+            System.out.println("Ошибка доступа к базе данных или недопустимый запрос. Команда не была исполнена.\n"+  ex.getMessage());
         }
         return false;
     }
@@ -237,6 +234,7 @@ public class CommandInvoker {
     public CommandContainer getLastCommandContainer() {
         return lastCommandContainer;
     }
+
     public void addToCommandsHistory(String string){
         if(commandsHistoryList.size()==6) {
             commandsHistoryList.remove(0);

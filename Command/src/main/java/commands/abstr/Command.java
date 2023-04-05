@@ -6,10 +6,13 @@ package commands.abstr;
  * @date 21.02.2023 20:12
  */
 
+import database.UserData;
 import exceptions.CannotExecuteCommandException;
 
 import java.io.PrintStream;
+import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.concurrent.locks.Lock;
 
 /**
  * Uнтерфейс, реализация которого приведена в командах.
@@ -45,8 +48,8 @@ public abstract class Command {
      *
      * @see InvocationStatus
      */
-    public abstract void execute(String[] arguments, InvocationStatus invocationEnum, PrintStream printStream)
-            throws CannotExecuteCommandException; //name of the command + arguments
+    public abstract void execute(String[] arguments, InvocationStatus invocationEnum, PrintStream printStream, UserData userData, Lock locker)
+            throws CannotExecuteCommandException, SQLException; //name of the command + arguments
 
     /**
      * Метод, возвращающий имя команды.

@@ -1,4 +1,5 @@
 import commands.CommandInvoker;
+import database.UserData;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -13,9 +14,9 @@ public class CommandProcessor {
     public CommandProcessor(CommandInvoker commandInvoker){
         this.commandInvoker=commandInvoker;
     }
-    public boolean executeCommand(String firstCommandLine) {
+    public boolean executeCommand(String firstCommandLine, UserData userData) {
 
-        if (!commandInvoker.executeClient(firstCommandLine, System.out)) {
+        if (!commandInvoker.executeClient(firstCommandLine, System.out,userData)) {
             rootLogger.warn("Команда не была исполнена");
             return false;
         } else {

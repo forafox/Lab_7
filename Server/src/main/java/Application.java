@@ -2,19 +2,21 @@ import collection.CollectionManager;
 import collection.LabWork;
 import commands.CommandInvoker;
 import commands.abstr.CommandContainer;
-import io.UserIO;
-import org.apache.logging.log4j.Level;
+import database.CollectionDatabaseHandler;
+import database.DatabaseConnection;
+import database.UserData;
+import database.UserDatabaseHandler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-import workWithFile.FileManager;
-import workWithFile.XmlParser;
 
-import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
+import java.net.SocketException;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author Karabanov Andrey
@@ -22,103 +24,77 @@ import java.util.Scanner;
  * @date 25.03.2023 18:11
  */
 public class Application {
-    CollectionManager collectionManager;
-
-    FileManager fileManager;
-
-    XmlParser xmlParser;
-
-    UserIO userIO;
-
-    CommandInvoker commandInvoker;
-
-    ServerConnection serverConnection;
-
-    private boolean isConnected;
-
     private static final Logger rootLogger = LogManager.getRootLogger();
 
-    Application() {
-        collectionManager = new CollectionManager();
-        fileManager = new FileManager();
-        xmlParser = new XmlParser();
-        userIO = new UserIO();
-        rootLogger.info("Конструктор класса Application был загружен.");
+    private Connection dbConnection;
+
+    public void start(int port){
+        this.createDatabaseConnection();
+        UserDatabaseHandler udh=new UserDatabaseHandler(dbConnection);
+        CollectionDatabaseHandler cdh=new CollectionDatabaseHandler(dbConnection);
+        try {
+            LabWork[] labWorks = cdh.loadInMemory();
+            CollectionManager collectionManager = new CollectionManager(labWorks);
+            rootLogger.info("Коллекция была загружена из бд.");
+            Lock locker = new ReentrantLock();
+            CommandInvoker commandInvoker = new CommandInvoker(collectionManager, cdh, locker);
+            rootLogger.info("Класс Application готов.");
+
+            ServerConnection serverConnection = new ServerConnection();//здесь хранится datagramSocket сервера.
+            serverConnection.createFromPort(port);
+
+            RequestReader requestReader = new RequestReader(serverConnection.getServerSocket());
+            ResponseSender responseSender = new ResponseSender(serverConnection.getServerSocket());
+            CommandProcessor commandProcessor = new CommandProcessor(udh, cdh, commandInvoker);
+
+            Server server = new Server(requestReader, responseSender, commandProcessor);
+            rootLogger.info("Старт нового потока");
+            new Thread(server).start();
+        }
+        catch (SQLException ex) {
+            System.out.println("Ошибка при загрузке коллекции в память. Завершение работы сервера.");
+            System.exit(-10);
+        }
+//        catch (IOException ex) {
+//            rootLogger.error(ex.getClass());
+//            ex.printStackTrace();
+//            System.exit(-15);
+//        }
     }
 
-    public void start(String inputFile) throws IOException, ParserConfigurationException, SAXException {
-
+    private void createDatabaseConnection(){
+        Scanner scanner=new Scanner(System.in);
+        rootLogger.info("Введите данные для входа. Логин и Пароль");
+       // String jdbcHeliosURL="jdbc:postgresql://pg:5444/studs";
+        String jdbcHeliosURL="jdbc:postgresql://localhost:5432/studs";
+        String jdbcLocalURL="jdbc:postgresql://localhost:5489/studs";
+        String login="";
+        String password="";
         try {
-            File ioFile = new File(inputFile);
-            if (!ioFile.canWrite() || ioFile.isDirectory() || !ioFile.isFile()) throw new IOException();
-            String file = fileManager.readFromFile(inputFile);
-
-            LabWork[] labWorks = xmlParser.parseToCollection(new InputSource(new StringReader(file)));
-            for (LabWork labWork : labWorks) collectionManager.insertWithId(labWork.getId(), labWork, System.out);
-
-            this.commandInvoker = new CommandInvoker(collectionManager, inputFile);
-
-            rootLogger.printf(Level.INFO, "Элементы коллекций из файла %1$s были загружены.", inputFile);
-
-
-            serverConnection = new ServerConnection();//здесь хранится datagramSocket сервера.
-
-            Scanner scanner = new Scanner(System.in);
-
-            do {
-                System.out.print("Введите порт: ");
-                int port = scanner.nextInt();
-                if (port <= 0){
-                    rootLogger.error("Введенный порт невалиден.");
-                }
-                else{
-                    isConnected = serverConnection.createFromPort(port);//создание datagramSocket для сервера
-                }
-            } while (!isConnected);
-            rootLogger.info("Порт установлен.");
-        }catch(NoSuchElementException ex){
-            rootLogger.error("Аварийное завершение работы");
+            scanner=new Scanner(new FileReader("D:\\JavaProject\\Lab_7\\Server\\src\\main\\resources\\credentials.txt"));
+        }catch (FileNotFoundException ex){
+            rootLogger.error(ex.getMessage());
+            rootLogger.error("Не найден файл credentials.txt с данными для входа. Завершение работы");
             System.exit(-1);
         }
+        try{
+            login=scanner.nextLine().trim();
+            password=scanner.nextLine().trim();
+            rootLogger.info(login);
+            rootLogger.info(password);
+        }catch (NoSuchElementException ex){
+            rootLogger.error("Не найдены данные для входа. Завершение работы.");
+            System.exit(-1);
+        }
+        DatabaseConnection databaseConnection = new DatabaseConnection(jdbcHeliosURL, login, password);
         try {
-            cycle(commandInvoker);
-        } catch (NoSuchElementException | InterruptedException ex) {
-            rootLogger.warn(ex.getMessage());
-            rootLogger.warn("Работа сервера завершена.");
+            dbConnection = databaseConnection.connectToDatabase();
+            rootLogger.info("Соединение с бд установлено");
+        }catch (SQLException ex){
+            rootLogger.error("Соединение с бд не установлено. Завершение работы сервера");
+            rootLogger.error(ex.getMessage());
+            rootLogger.error("Завершение туть");
+            System.exit(-1);
         }
-    }
-
-    private void cycle(CommandInvoker commandInvoker) throws InterruptedException {
-
-        RequestReader requestReader = new RequestReader(serverConnection.getServerSocket()); //создание читателя запросов
-
-        ResponseSender responseSender = new ResponseSender(serverConnection.getServerSocket()); //создание отправителя запросов
-
-        CommandProcessor commandProcessor = new CommandProcessor(commandInvoker);//создание объекта, работающего с командами
-
-        while (isConnected) {
-            try {
-                requestReader.readCommand();
-                CommandContainer command = requestReader.getCommandContainer();
-
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                PrintStream printStream = new PrintStream(baos);
-
-                commandProcessor.executeCommand(command, printStream);
-
-                Thread.sleep(1000);
-                responseSender.send(baos.toString(), requestReader.getSenderAddress(), requestReader.getSenderPort());
-                rootLogger.info("Пакет был отправлен " + requestReader.getSenderAddress().getHostAddress() + " " + requestReader.getSenderPort());
-
-            } catch (IOException ex) {
-                rootLogger.warn("Произошла ошибка при чтении: " + ex.getMessage());
-            } catch (ClassNotFoundException ex) {
-                rootLogger.error("Неизвестная ошибка: " + ex);
-            }
-        }
-    }
-
-    public CollectionManager getCollectionManager() {
-        return collectionManager;
     }
 }
