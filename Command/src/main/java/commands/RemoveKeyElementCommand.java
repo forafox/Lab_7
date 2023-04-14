@@ -19,7 +19,7 @@ import exceptions.CannotExecuteCommandException;
 import java.io.PrintStream;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
 
 /**
  * Команда, удаляющая элемент по ключу
@@ -51,7 +51,7 @@ public class RemoveKeyElementCommand extends Command {
      * @param arguments аргументы команды.
      */
     @Override
-    public void execute(String[] arguments, InvocationStatus invocationEnum, PrintStream printStream, UserData userData, Lock locker) throws CannotExecuteCommandException, SQLException {
+    public void execute(String[] arguments, InvocationStatus invocationEnum, PrintStream printStream, UserData userData, ReadWriteLock locker) throws CannotExecuteCommandException, SQLException {
         if (invocationEnum.equals(InvocationStatus.CLIENT)) {
             result = new ArrayList<>();
             if (arguments.length != 1) {
@@ -63,14 +63,14 @@ public class RemoveKeyElementCommand extends Command {
         } else if (invocationEnum.equals(InvocationStatus.SERVER)) {
             Integer id = (Integer) this.getResult().get(0);
             try {
-                locker.lock();
+                locker.writeLock().lock();
                 if (cdh.isOwner(id, userData)) {
                     cdh.deleteRowById(id);
                     collectionManager.removeKey(id);
                     printStream.println("Элемент с id = " + id + " был удален.");
                 } else printStream.println("Элемента с указанным id не существует.");
             } finally {
-                locker.unlock();
+                locker.writeLock().unlock();
             }
         }
     }

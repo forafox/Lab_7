@@ -12,7 +12,7 @@ import database.UserData;
 import exceptions.CannotExecuteCommandException;
 
 import java.io.PrintStream;
-import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
 
 /**
  * Класс команды, которая завершает работу программы.
@@ -33,7 +33,7 @@ public class ExitCommand extends Command {
      * @param arguments аргументы команды.
      */
     @Override
-    public void execute(String[] arguments, InvocationStatus invocationEnum, PrintStream printStream, UserData userData, Lock locker) throws CannotExecuteCommandException {
+    public void execute(String[] arguments, InvocationStatus invocationEnum, PrintStream printStream, UserData userData, ReadWriteLock locker) throws CannotExecuteCommandException {
         if (invocationEnum.equals(InvocationStatus.CLIENT)) {
             if (arguments.length > 0) {
                 throw new CannotExecuteCommandException("У данной команды нет аргументов.");

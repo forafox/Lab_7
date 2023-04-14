@@ -7,7 +7,7 @@ import exceptions.CannotExecuteCommandException;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
-import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
 
 /**
  * @author Karabanov Andrey
@@ -41,7 +41,7 @@ public class HistoryCommand extends Command {
      * @throws CannotExecuteCommandException
      */
     @Override
-    public void execute(String[] arguments, InvocationStatus invocationEnum, PrintStream printStream, UserData userData, Lock locker) throws CannotExecuteCommandException {
+    public void execute(String[] arguments, InvocationStatus invocationEnum, PrintStream printStream, UserData userData, ReadWriteLock locker) throws CannotExecuteCommandException {
         if (invocationEnum.equals(InvocationStatus.CLIENT)) {
             if (arguments.length > 0) {
                 throw new CannotExecuteCommandException("У данной команды нет аргументов.");
@@ -51,7 +51,9 @@ public class HistoryCommand extends Command {
             sb.append("History: \n");
             for(String str: commandsHistoryList)
                sb.append(str).append("\n");
+            locker.readLock().lock();
             printStream.println(sb);
+            locker.readLock().unlock();
         }
     }
     /**

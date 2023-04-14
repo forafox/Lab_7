@@ -1,22 +1,18 @@
 import collection.CollectionManager;
 import collection.LabWork;
 import commands.CommandInvoker;
-import commands.abstr.CommandContainer;
 import database.CollectionDatabaseHandler;
 import database.DatabaseConnection;
-import database.UserData;
 import database.UserDatabaseHandler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
 import java.io.*;
-import java.net.SocketException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * @author Karabanov Andrey
@@ -36,7 +32,9 @@ public class Application {
             LabWork[] labWorks = cdh.loadInMemory();
             CollectionManager collectionManager = new CollectionManager(labWorks);
             rootLogger.info("Коллекция была загружена из бд.");
-            Lock locker = new ReentrantLock();
+            //Lock locker = new ReentrantLock();
+            //Lock locker = new;
+            ReadWriteLock locker = new ReentrantReadWriteLock();
             CommandInvoker commandInvoker = new CommandInvoker(collectionManager, cdh, locker);
             rootLogger.info("Класс Application готов.");
 
@@ -48,18 +46,13 @@ public class Application {
             CommandProcessor commandProcessor = new CommandProcessor(udh, cdh, commandInvoker);
 
             Server server = new Server(requestReader, responseSender, commandProcessor);
-            rootLogger.info("Старт нового потока");
+            rootLogger.info("Старт нового потока.Началась обработка нового полученного запроса.");
             new Thread(server).start();
         }
         catch (SQLException ex) {
             System.out.println("Ошибка при загрузке коллекции в память. Завершение работы сервера.");
             System.exit(-10);
         }
-//        catch (IOException ex) {
-//            rootLogger.error(ex.getClass());
-//            ex.printStackTrace();
-//            System.exit(-15);
-//        }
     }
 
     private void createDatabaseConnection(){

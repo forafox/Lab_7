@@ -7,7 +7,6 @@
 
 import commands.CommandInvoker;
 import database.UserData;
-import database.UserDatabaseHandler;
 import io.UserIO;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -15,8 +14,6 @@ import org.apache.logging.log4j.Logger;
 import java.io.*;
 import java.net.*;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 import java.util.Locale;
 import java.util.NoSuchElementException;
 import java.util.Scanner;

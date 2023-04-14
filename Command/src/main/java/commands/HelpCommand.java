@@ -13,7 +13,7 @@ import exceptions.CannotExecuteCommandException;
 
 import java.io.PrintStream;
 import java.util.HashMap;
-import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
 
 /**
  * Класс команды, которая выводит описания всех команд, реализованных в программе.
@@ -39,7 +39,7 @@ public class HelpCommand extends Command {
      * @param printStream поток вывода.
      * @param arguments аргументы команды.
      */
-    public void execute(String[] arguments, InvocationStatus invocationEnum, PrintStream printStream, UserData userData, Lock locker) throws CannotExecuteCommandException {
+    public void execute(String[] arguments, InvocationStatus invocationEnum, PrintStream printStream, UserData userData, ReadWriteLock locker) throws CannotExecuteCommandException {
         if (invocationEnum.equals(InvocationStatus.CLIENT)) {
             if (arguments.length > 0) {
                 throw new CannotExecuteCommandException("У данной команды нет аргументов.");
@@ -47,7 +47,9 @@ public class HelpCommand extends Command {
                 commands.forEach((key, value) -> System.out.println(key + ": " + value.getDescription()));
             }
         } else if (invocationEnum.equals(InvocationStatus.SERVER)) {
+            locker.readLock().lock();
             commands.forEach((key, value) -> System.out.println(key + ": " + value.getDescription()));
+            locker.readLock().unlock();
         }
     }
     /**

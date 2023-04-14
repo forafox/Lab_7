@@ -17,7 +17,7 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Scanner;
-import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
 
 /**
  * @author Karabanov Andrey
@@ -89,7 +89,7 @@ public class ExecuteScriptCommand extends Command {
      * @param invocationEnum режим, с которым должна быть исполнена команда.
      * @param printStream    поток вывода.
      */
-    public void execute(String[] arguments, InvocationStatus invocationEnum, PrintStream printStream, UserData userData, Lock locker) throws CannotExecuteCommandException {
+    public void execute(String[] arguments, InvocationStatus invocationEnum, PrintStream printStream, UserData userData, ReadWriteLock locker) throws CannotExecuteCommandException {
         if (invocationEnum.equals(InvocationStatus.CLIENT)) {
             result = new ArrayList<>();
             try {

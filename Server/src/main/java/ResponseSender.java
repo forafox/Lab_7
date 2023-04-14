@@ -120,6 +120,7 @@ public class ResponseSender implements Runnable{
                 rootLogger.warn("Произошла ошибка при отправке: " + exception.getMessage());
             }
         }
+        //rootLogger.info("ResponseSender say: "+Thread.currentThread().getName() +" Правильно отработал");
     }
 
     public DatagramSocket getServerSocket() {

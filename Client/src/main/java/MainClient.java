@@ -8,6 +8,7 @@ import org.apache.logging.log4j.Logger;
 public class MainClient {
     private static final Logger rootLogger = LogManager.getRootLogger();
     public static void main(String[] args){
+        System.out.println("START CLIENT");
         if (args.length != 0) {
             Application application = new Application(Integer.parseInt(args[0]));//запуск с портом
             try {

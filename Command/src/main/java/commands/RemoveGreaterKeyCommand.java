@@ -19,7 +19,7 @@ import exceptions.CannotExecuteCommandException;
 import java.io.PrintStream;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
 
 /**
  * Команда, удаляющая элементы коллекции, превыщающие заданный ключ
@@ -52,7 +52,7 @@ public class RemoveGreaterKeyCommand extends Command {
      * @param arguments аргументы команды.
      */
     @Override
-    public void execute(String[] arguments, InvocationStatus invocationEnum, PrintStream printStream, UserData userData, Lock locker) throws CannotExecuteCommandException, SQLException {
+    public void execute(String[] arguments, InvocationStatus invocationEnum, PrintStream printStream, UserData userData, ReadWriteLock locker) throws CannotExecuteCommandException, SQLException {
         if (invocationEnum.equals(InvocationStatus.CLIENT)) {
             result = new ArrayList<>();
             if (arguments.length != 1) {
@@ -66,9 +66,10 @@ public class RemoveGreaterKeyCommand extends Command {
         } else if (invocationEnum.equals(InvocationStatus.SERVER)) {
             Integer id = (Integer) this.getResult().get(0);
             try {
-                locker.lock();
-
+                locker.writeLock().lock();
+                locker.readLock().lock();
                 Integer[] keys = collectionManager.getGreaterKeys(id);
+                locker.readLock().unlock();
                 for (Integer key : keys) {
                     if (cdh.isOwner(id, userData)) {
                         cdh.deleteRowById(key);
@@ -76,7 +77,7 @@ public class RemoveGreaterKeyCommand extends Command {
                     }
                 }
             } finally {
-                locker.unlock();
+                locker.writeLock().unlock();
             }
             printStream.println("Элементы с id < " + id + " были удалены, принадлежащие пользователю " + userData.getLogin());
         }

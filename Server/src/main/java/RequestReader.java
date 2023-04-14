@@ -1,15 +1,13 @@
-import com.google.common.primitives.Bytes;
+
 import commands.abstr.CommandContainer;
 import database.UserData;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.concurrent.Callable;
 

@@ -16,7 +16,7 @@ import exceptions.CannotExecuteCommandException;
 
 import java.io.PrintStream;
 import java.sql.SQLException;
-import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
 
 /**
  * Команда, очищающая коллекцию.
@@ -48,20 +48,22 @@ public class ClearCommand extends Command {
         this.collectionManager = collectionManager;
     }
     @Override
-    public void execute(String[] arguments, InvocationStatus invocationEnum, PrintStream printStream, UserData userData, Lock locker) throws CannotExecuteCommandException, SQLException, SQLException {
+    public void execute(String[] arguments, InvocationStatus invocationEnum, PrintStream printStream, UserData userData, ReadWriteLock locker) throws CannotExecuteCommandException, SQLException, SQLException {
         if (invocationEnum.equals(InvocationStatus.CLIENT)) {
             if (arguments.length > 0) {
                 throw new CannotExecuteCommandException("У данной команды нет аргументов.");
             }
         } else if (invocationEnum.equals(InvocationStatus.SERVER)) {
             try {
-                locker.lock();
+                locker.readLock().lock();
                 Integer[] ids = cdh.getAllOwner(userData);
-                cdh.deleteAllOwned(userData); //я же не зря писал этот метод
+                locker.writeLock().lock();
+                cdh.deleteAllOwned(userData);
                 for (int id : ids) collectionManager.removeKey(id);
                 printStream.println("Элементы коллекции, принадлежащие пользователю " + userData.getLogin() + " были удалены.");
             } finally {
-                locker.unlock();
+                locker.writeLock().unlock();
+                locker.readLock().unlock();
             }
 
         }

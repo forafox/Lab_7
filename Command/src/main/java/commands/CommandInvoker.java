@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Locale;
-import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
 
 /**
  * Класс, через который осуществляется исполнение команд. Хранит коллекции всех существующих команд.
@@ -70,7 +70,7 @@ public class CommandInvoker {
     /**
      * Поле, хранящее список команд
      */
-    private Lock locker;
+    private ReadWriteLock locker;
     private CollectionDatabaseHandler cdh;
     ArrayList<String> commandsHistoryList = new ArrayList<>();
 
@@ -110,7 +110,7 @@ public class CommandInvoker {
      *
      * @param collectionManager менеджер коллекции.
      */
-    public CommandInvoker(CollectionManager collectionManager, CollectionDatabaseHandler cdh, Lock locker) {
+    public CommandInvoker(CollectionManager collectionManager, CollectionDatabaseHandler cdh, ReadWriteLock locker) {
         this.serverCommands = new HashMap<>();
 
         this.collectionManager = collectionManager;
@@ -128,9 +128,8 @@ public class CommandInvoker {
         clientCommands.put("clear", new ClearCommand());
         clientCommands.put("exit", new ExitCommand());
         clientCommands.put("help", new HelpCommand(clientCommands));
-
         clientCommands.put("insert", new InsertElementCommand(labWorkFieldsReader));
-      //clientCommands.put("update", new UpdateElementCommand(userIO));
+        clientCommands.put("update", new UpdateElementCommand(userIO));
         clientCommands.put("remove_key", new RemoveKeyElementCommand());
         clientCommands.put("execute_script", new ExecuteScriptCommand(userIO, labWorkFieldsReader, script));
         clientCommands.put("remove_lower_key", new RemoveLowerKeyCommand());
@@ -149,9 +148,8 @@ public class CommandInvoker {
         serverCommands.put("clear", new ClearCommand(collectionManager,cdh));//y
         serverCommands.put("save", new SaveCommand(collectionManager, inputFile));//y
         serverCommands.put("help", new HelpCommand(serverCommands));//y
-
         serverCommands.put("insert", new InsertElementCommand(collectionManager,cdh));//y
-      //serverCommands.put("update", new UpdateElementCommand(collectionManager,cdh));//y
+        serverCommands.put("update", new UpdateElementCommand(collectionManager,cdh));//y
         serverCommands.put("remove_key", new RemoveKeyElementCommand(collectionManager,cdh));//y
         serverCommands.put("remove_greater_key",new RemoveGreaterKeyCommand(collectionManager,cdh));
         serverCommands.put("remove_lower_key", new RemoveLowerKeyCommand(collectionManager,cdh));
@@ -181,6 +179,7 @@ public class CommandInvoker {
                 command = clientCommands.get(words[0].toLowerCase(Locale.ROOT));
 
                 command.execute(arguments, InvocationStatus.CLIENT, printStream, userData, null);
+                this.addToCommandsHistory(userData.getCommandContainer().getName());
                 lastCommandContainer = new CommandContainer(command.getName(), command.getResult());
                 return true;
             }
@@ -213,7 +212,6 @@ public class CommandInvoker {
 
                 command.setResult(result);
                 command.execute(arguments, InvocationStatus.SERVER, printStream, userData, locker); //throws CannotExecuteCommandException
-                this.addToCommandsHistory(userData.getCommandContainer().getName());
                 return true;
             }
         } catch (NullPointerException ex) {

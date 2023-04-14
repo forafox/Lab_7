@@ -18,7 +18,7 @@ import exceptions.CannotExecuteCommandException;
 import java.io.PrintStream;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
 
 /**
  * Команда, удаляющая из коллекции элементы с ключем, меньше чем заданный
@@ -49,7 +49,7 @@ public class RemoveLowerKeyCommand extends Command {
      * @param arguments аргументы команды.
      */
     @Override
-    public void execute(String[] arguments, InvocationStatus invocationEnum, PrintStream printStream, UserData userData, Lock locker) throws CannotExecuteCommandException {
+    public void execute(String[] arguments, InvocationStatus invocationEnum, PrintStream printStream, UserData userData, ReadWriteLock locker) throws CannotExecuteCommandException {
         if (invocationEnum.equals(InvocationStatus.CLIENT)) {
             result = new ArrayList<>();
             if (arguments.length != 1) {
@@ -63,9 +63,10 @@ public class RemoveLowerKeyCommand extends Command {
         } else if (invocationEnum.equals(InvocationStatus.SERVER)) {
             Integer id = (Integer) this.getResult().get(0);
             try {
-                locker.lock();
-
+                locker.writeLock().lock();
+                locker.readLock().lock();
                 Integer[] keys = collectionManager.getLowerKeys(id);
+                locker.readLock().unlock();
                 for (Integer key : keys) {
                     if (cdh.isOwner(id, userData)) {
                         cdh.deleteRowById(key);
@@ -75,7 +76,7 @@ public class RemoveLowerKeyCommand extends Command {
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             } finally {
-                locker.unlock();
+                locker.writeLock().unlock();
             }
             printStream.println("Элементы с id < " + id + " были удалены, принадлежащие пользователю " + userData.getLogin());
         }

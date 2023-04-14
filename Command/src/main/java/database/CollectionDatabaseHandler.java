@@ -26,7 +26,7 @@ public class CollectionDatabaseHandler {
                 "LocationY,LocationName,id,Owner) Values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?,?,?,?)";
         PreparedStatement ps = connection.prepareStatement(sql);
         ps.setString(1, labWork.getName());
-        ps.setDouble(2, labWork.getCoordinates().getX());
+        ps.setLong(2, labWork.getCoordinates().getX());
         ps.setDouble(3, labWork.getCoordinates().getY());
         ps.setTimestamp(4, Timestamp.valueOf(labWork.getCreationDate().toLocalDateTime()));
         ps.setInt(5, labWork.getMinimalPoint());
@@ -50,13 +50,13 @@ public class CollectionDatabaseHandler {
     }
 
     public void replaceRow(LabWork labWork) throws SQLException {
-        String sql = "UPDATE LABWORKCOLLECTION SET(name, coordinate_x, coordinate_x, minimalPoint, maximumPoint, " +
+        String sql = "UPDATE LABWORKCOLLECTION SET(name, coordinate_x, coordinate_y, minimalPoint, maximumPoint, " +
                 "personalQualitiesMaximum, difficulty, PersonName, PersonHeight,PersonPassportID,LocationX," +
                 "LocationY,LocationName)= (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? ,?)" +
                 "WHERE id=?";
         PreparedStatement ps = connection.prepareStatement(sql);
         ps.setString(1, labWork.getName());
-        ps.setDouble(2, labWork.getCoordinates().getX());
+        ps.setLong(2, labWork.getCoordinates().getX());
         ps.setDouble(3, labWork.getCoordinates().getY());
         ps.setLong(4, labWork.getMinimalPoint());
         ps.setDouble(5, labWork.getMaximumPoint());

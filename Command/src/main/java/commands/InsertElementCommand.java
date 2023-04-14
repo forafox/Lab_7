@@ -15,13 +15,12 @@ import commands.abstr.InvocationStatus;
 import database.CollectionDatabaseHandler;
 import database.UserData;
 import exceptions.CannotExecuteCommandException;
-import io.UserIO;
 import workWithFile.LabWorkFieldsReader;
 
 import java.io.PrintStream;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
 
 /**
  * Команда, добавляющая элемент в коллекцию
@@ -71,7 +70,7 @@ public class InsertElementCommand extends Command{
      * @param arguments аргументы команды.
      */
     @Override
-    public void execute(String[] arguments, InvocationStatus invocationStatus, PrintStream printStream, UserData userData, Lock locker) throws CannotExecuteCommandException {
+    public void execute(String[] arguments, InvocationStatus invocationStatus, PrintStream printStream, UserData userData, ReadWriteLock locker) throws CannotExecuteCommandException {
         if (invocationStatus.equals(InvocationStatus.CLIENT)) {
             result = new ArrayList<>();
             if (arguments.length > 1) {
@@ -94,7 +93,7 @@ public class InsertElementCommand extends Command{
             }
         } else if (invocationStatus.equals(InvocationStatus.SERVER)) {
             try{
-            locker.lock();
+            locker.writeLock().lock();
             if(result.size()==2) {
                 LabWork labWork = (LabWork) this.getResult().get(1);
                 if (!cdh.isAnyRowById(labWork.getId())) {
@@ -114,7 +113,7 @@ public class InsertElementCommand extends Command{
         } catch (SQLException e) {
                 throw new RuntimeException(e);
             } finally {
-                locker.unlock();
+                locker.writeLock().unlock();
             }
         }
     }

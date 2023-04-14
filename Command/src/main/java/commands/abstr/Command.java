@@ -12,7 +12,7 @@ import exceptions.CannotExecuteCommandException;
 import java.io.PrintStream;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
 
 /**
  * Uнтерфейс, реализация которого приведена в командах.
@@ -48,7 +48,7 @@ public abstract class Command {
      *
      * @see InvocationStatus
      */
-    public abstract void execute(String[] arguments, InvocationStatus invocationEnum, PrintStream printStream, UserData userData, Lock locker)
+    public abstract void execute(String[] arguments, InvocationStatus invocationEnum, PrintStream printStream, UserData userData, ReadWriteLock locker)
             throws CannotExecuteCommandException, SQLException; //name of the command + arguments
 
     /**

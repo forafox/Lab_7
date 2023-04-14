@@ -5,10 +5,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 
 /**
  * @author Karabanov Andrey
@@ -23,8 +20,16 @@ public class Server implements Runnable{
     private final ArrayList<UserData> requestList = new ArrayList<>();
     private final ArrayList<UserData> commandList = new ArrayList<>();
     private final HashMap<UserData, ByteArrayOutputStream> responseMap = new HashMap<>();
-    ExecutorService serviceReader = Executors.newFixedThreadPool(2);
-
+    //Fixed Thread Poop для многопоточной отправки ответов
+    ExecutorService serviceResponse = Executors.newFixedThreadPool(2);//Для отправки ответов
+    //Fork Join Pool для многопоточного чтения запросов
+    private final ForkJoinPool forkJoinPool = new ForkJoinPool(2);
+    /**
+     * Конструктор класса
+     * @param rr
+     * @param rs
+     * @param cp
+     */
     public Server(RequestReader rr, ResponseSender rs, CommandProcessor cp) {
         this.requestReader = rr;
         this.responseSender = rs;
@@ -34,24 +39,28 @@ public class Server implements Runnable{
     @Override
     public void run() {
         while (true) {
-            Future<UserData> request = serviceReader.submit(requestReader);
+            ForkJoinTask<UserData> request1 = forkJoinPool.submit(requestReader);
             synchronized (requestList) {
                 try {
-                    requestList.add(request.get());
+                    requestList.add(request1.get());
                 } catch (InterruptedException | ExecutionException e) {
                     e.printStackTrace();
                 }
             }
-            UserData[] requestArray = requestList.toArray(new UserData[0]);
+
+            UserData[] requestArray = requestList.toArray(new UserData[0]);//массив пользователей
+            //здесь мы всех регаем или смотрим подключение
             for (UserData userData : requestArray) {
                 this.findNextStep(userData);
             }
 
             UserData[] commandArray = commandList.toArray(new UserData[0]);
             ArrayList<Thread> commandThread = new ArrayList<>();
+            //начало обработки комманд для каждого пользователя
             for (UserData userData : commandArray) {
                 commandThread.add(this.startExecution(userData));
             }
+            //Последовательная работа всех вызванных потоков для соблюдения порядка
             for (Thread thread : commandThread) {
                 try {
                     thread.join();
@@ -59,27 +68,25 @@ public class Server implements Runnable{
                     e.printStackTrace();
                 }
             }
-
+            //Подготовка отправки ответов
             UserData[] responseKeys;
             ByteArrayOutputStream[] responseValues;
-            ArrayList<Thread> responseThread = new ArrayList<>();
+
             synchronized (responseMap) {
                 responseKeys = responseMap.keySet().toArray(new UserData[0]);
                 responseValues = responseMap.values().toArray(new ByteArrayOutputStream[0]);
             }
+            //Отправка всех ответов.
             for (int i = 0; i < responseKeys.length; i++) {
-                responseThread.add(this.sendResponse(responseKeys[i], responseValues[i]));
-            }
-            for (Thread thread : responseThread) {
-                try {
-                    thread.join();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+                this.sendResponse(responseKeys[i],responseValues[i]);
             }
         }
     }
 
+    /**
+     * Метод отвечающий за авторизацию и подключение пользователя, создание нового пользователя.
+     * @param userData
+     */
     private void findNextStep(UserData userData) {
         synchronized (requestList) {
             requestList.remove(userData);
@@ -106,18 +113,18 @@ public class Server implements Runnable{
             commandList.remove(userData);
         }
         CommandExecutor commandExecutor = new CommandExecutor(commandProcessor, userData, responseMap);
+        //Новый поток для обработки полученного запроса
         Thread t = new Thread(commandExecutor);
         t.start();
         return t;
     }
 
-    private Thread sendResponse(UserData userData, ByteArrayOutputStream baos) {
+    private void sendResponse(UserData userData, ByteArrayOutputStream baos) {
         synchronized (responseMap) {
             responseMap.remove(userData, baos);
         }
         rootLogger.info("Отправка для " + userData.getPort() + " началась.");
-        Thread t = new Thread(new ResponseSender(responseSender.getServerSocket(), userData.getInetAddress(), userData.getPort(), baos.toByteArray()));
-        t.start();
-        return t;
+        //Новый поток для отправки ответа
+        serviceResponse.submit(new ResponseSender(responseSender.getServerSocket(), userData.getInetAddress(), userData.getPort(), baos.toByteArray()));
     }
 }

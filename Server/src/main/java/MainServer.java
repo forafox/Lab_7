@@ -10,7 +10,6 @@ public class MainServer {
     private static final Logger rootLogger = LogManager.getRootLogger();
 
     public static void main(String[] args) {
-
         try {
             Class.forName("org.postgresql.Driver");
         } catch (ClassNotFoundException e) {
