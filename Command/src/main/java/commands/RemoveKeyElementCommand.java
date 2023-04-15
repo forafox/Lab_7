@@ -68,7 +68,7 @@ public class RemoveKeyElementCommand extends Command {
                     cdh.deleteRowById(id);
                     collectionManager.removeKey(id);
                     printStream.println("Элемент с id = " + id + " был удален.");
-                } else printStream.println("Элемента с указанным id не существует.");
+                } else printStream.println("Элемента с указанным id не существует или вы не являетесь его владельцем");
             } finally {
                 locker.writeLock().unlock();
             }

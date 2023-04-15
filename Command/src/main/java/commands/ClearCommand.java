@@ -57,13 +57,13 @@ public class ClearCommand extends Command {
             try {
                 locker.readLock().lock();
                 Integer[] ids = cdh.getAllOwner(userData);
+                locker.readLock().unlock();
                 locker.writeLock().lock();
                 cdh.deleteAllOwned(userData);
                 for (int id : ids) collectionManager.removeKey(id);
                 printStream.println("Элементы коллекции, принадлежащие пользователю " + userData.getLogin() + " были удалены.");
             } finally {
                 locker.writeLock().unlock();
-                locker.readLock().unlock();
             }
 
         }

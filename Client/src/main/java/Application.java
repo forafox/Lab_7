@@ -144,15 +144,19 @@ public class Application {
         userData.setPassword(DataEncryptor.sha256(password));
         //userData.setPassword(dataEncryptor.encryptStringSHA256(password));
        // userData.setPassword(password);
-
-        responseSender.sendUserData(userData, inetSocketAddress);
-
-        ByteBuffer byteBuffer = requestReader.receiveBuffer();
-
-        ByteArrayInputStream bais = new ByteArrayInputStream(byteBuffer.array(), 0, byteBuffer.limit());
-        ObjectInputStream ois = new ObjectInputStream(bais);
-
-        return ois.readBoolean();
+/////////////
+        //responseSender.sendUserData(userData, inetSocketAddress);
+        /////////////////
+        responseSender.sendUserDataOLD(userData,inetSocketAddress);
+        ByteBuffer byteBufferOLD =requestReader.receiveBufferDataOLD();
+        ByteArrayInputStream baisOLD = new ByteArrayInputStream(byteBufferOLD.array(), 0, byteBufferOLD.limit());
+        ObjectInputStream oisOLD = new ObjectInputStream(baisOLD);
+        //////
+//        ByteBuffer byteBuffer = requestReader.receiveBuffer();
+//        ByteArrayInputStream bais = new ByteArrayInputStream(byteBuffer.array(), 0, byteBuffer.limit());
+//        ObjectInputStream ois = new ObjectInputStream(bais);
+        //////
+        return oisOLD.readBoolean();
     }
     public void cycle(ResponseSender responseSender, RequestReader requestReader, CommandProcessor commandProcessor) throws IOException, InterruptedException {
         boolean isConnected = true;
@@ -171,10 +175,12 @@ public class Application {
                 if (isCommandAcceptable) {
 
                     userData.setCommandContainer(commandInvoker.getLastCommandContainer());
-                    responseSender.sendUserData(userData, inetSocketAddress);
+                    //responseSender.sendUserData(userData, inetSocketAddress);
+                    responseSender.sendUserDataOLD(userData,inetSocketAddress);
 
                     rootLogger.info("Данные были отправлены.");
-                    ByteBuffer byteBuffer = requestReader.receiveBuffer();
+                    //ByteBuffer byteBuffer = requestReader.receiveBuffer();
+                    ByteBuffer byteBuffer =requestReader.receiveBufferDataOLD();
                     rootLogger.info("Данные были получены.");
                     System.out.println(new String(byteBuffer.array()).trim() + "\n");
 

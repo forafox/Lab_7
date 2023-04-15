@@ -71,7 +71,7 @@ public class RemoveGreaterKeyCommand extends Command {
                 Integer[] keys = collectionManager.getGreaterKeys(id);
                 locker.readLock().unlock();
                 for (Integer key : keys) {
-                    if (cdh.isOwner(id, userData)) {
+                    if (cdh.isOwner(key, userData)) {
                         cdh.deleteRowById(key);
                         collectionManager.removeKey(key);
                     }
@@ -79,7 +79,7 @@ public class RemoveGreaterKeyCommand extends Command {
             } finally {
                 locker.writeLock().unlock();
             }
-            printStream.println("Элементы с id < " + id + " были удалены, принадлежащие пользователю " + userData.getLogin());
+            printStream.println("Элементы с id > " + id + " были удалены, принадлежащие пользователю " + userData.getLogin());
         }
     }
 

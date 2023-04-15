@@ -68,7 +68,7 @@ public class RemoveLowerKeyCommand extends Command {
                 Integer[] keys = collectionManager.getLowerKeys(id);
                 locker.readLock().unlock();
                 for (Integer key : keys) {
-                    if (cdh.isOwner(id, userData)) {
+                    if (cdh.isOwner(key, userData)) {
                         cdh.deleteRowById(key);
                         collectionManager.removeKey(key);
                     }

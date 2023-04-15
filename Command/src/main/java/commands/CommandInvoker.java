@@ -177,9 +177,7 @@ public class CommandInvoker {
             if (clientCommands.containsKey(words[0].toLowerCase(Locale.ROOT))) {
                 Command command;
                 command = clientCommands.get(words[0].toLowerCase(Locale.ROOT));
-
                 command.execute(arguments, InvocationStatus.CLIENT, printStream, userData, null);
-                this.addToCommandsHistory(userData.getCommandContainer().getName());
                 lastCommandContainer = new CommandContainer(command.getName(), command.getResult());
                 return true;
             }
@@ -210,6 +208,7 @@ public class CommandInvoker {
                 Command command;
                 command = serverCommands.get(words[0].toLowerCase(Locale.ROOT));
 
+                this.addToCommandsHistory(words[0].toLowerCase(Locale.ROOT));
                 command.setResult(result);
                 command.execute(arguments, InvocationStatus.SERVER, printStream, userData, locker); //throws CannotExecuteCommandException
                 return true;

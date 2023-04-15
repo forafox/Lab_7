@@ -81,9 +81,22 @@ public class CollectionManager {
         if (treeMap.size() == 0) {
             sb.append("Коллекция пуста.");
         } else {
+            ArrayList<Difficulty> difficultyArrayList = new ArrayList<>();
             for (Map.Entry<Integer, LabWork> entry : treeMap.entrySet()) {
-               sb.append(entry.getValue().getDifficulty()).append("\n"); // перебор элементов коллкции
-            } //Получение значений по коллекции
+                difficultyArrayList.add(entry.getValue().getDifficulty());
+            }
+            Collections.sort(difficultyArrayList);
+            Set<Difficulty> difficultySet=new LinkedHashSet<>(difficultyArrayList);
+
+            for (Difficulty difficulty : difficultySet) {
+                sb.append("id-");
+                for (Map.Entry<Integer, LabWork> entry : treeMap.entrySet()) {
+                    if(entry.getValue().getDifficulty().equals(difficulty)){
+                        sb.append(entry.getValue().getId()).append(",");
+                    }
+                }
+                sb.append(" : ").append(difficulty).append("\n"); // перебор элементов коллкции
+            }
         }
         return sb.toString();
     }
@@ -133,11 +146,11 @@ public class CollectionManager {
         int countHOPELESS=0;
         for (Map.Entry<Integer, LabWork> entry : treeMap.entrySet()) {
             Difficulty difficulty=(entry.getValue().getDifficulty());
-            if(difficulty.valueOf("VERY_EASY").equals(difficulty)) countVERY_EASY+=1;
-            else if(difficulty.valueOf("EASY").equals(difficulty)) countEASY+=1;
-            else if(difficulty.valueOf("VERY_HARD").equals(difficulty)) countVERY_HARD+=1;
-            else if(difficulty.valueOf("INSANE").equals(difficulty)) countINSANE+=1;
-            else if(difficulty.valueOf("HOPELESS").equals(difficulty)) countHOPELESS+=1;
+            if(Difficulty.valueOf("VERY_EASY").equals(difficulty)) countVERY_EASY+=1;
+            else if(Difficulty.valueOf("EASY").equals(difficulty)) countEASY+=1;
+            else if(Difficulty.valueOf("VERY_HARD").equals(difficulty)) countVERY_HARD+=1;
+            else if(Difficulty.valueOf("INSANE").equals(difficulty)) countINSANE+=1;
+            else if(Difficulty.valueOf("HOPELESS").equals(difficulty)) countHOPELESS+=1;
         }
         return("Кол-во элементов co значением поля Difficult: \nVERY_EASY - "+countVERY_EASY+"\nEASY - "+countEASY+"\n" +
                 "VERY_HARD - "+countVERY_HARD+"\nINSANE - "+countINSANE+"\nHOPELESS - "+countHOPELESS);
@@ -159,7 +172,7 @@ public class CollectionManager {
     public void insertWithId(Integer id, LabWork labWork, PrintStream printStream) {
         if (treeMap.get(id) == null) {
             treeMap.put(id, labWork);
-        } else printStream.printf("Элемент с данным ключом уже существует");
+        } else printStream.print("Элемент с данным ключом уже существует");
     }
 
     /**
@@ -176,8 +189,7 @@ public class CollectionManager {
     }
     public static int getRandomId(){
         int max=10000;
-        int i =(int)(Math.random() * max);
-        return i;
+        return (int)(Math.random() * max);
     }
     /**
      * Метод, изменяющий поле выбранного по идентификатору элемента коллекции

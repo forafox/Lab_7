@@ -24,26 +24,25 @@ public class RequestReader {
     public RequestReader(DatagramChannel clientChannel) {
         this.clientChannel = clientChannel;
     }
-    public byte[] receiveBufferData() throws IOException {
-        int waitingTime = 0;
+    public ByteBuffer receiveBufferDataOLD() throws IOException {
         var received = false;
         var result = new byte[0];
-       // ByteBuffer buffer=ByteBuffer.wrap(result);
+        ByteBuffer buffer=ByteBuffer.wrap(result);
             while (!received) {
                 var data = receiveBufferData(PACKET_SIZE);
-                rootLogger.info("Получено \"" + new String(data) + "\"");
-                rootLogger.info("Последний байт: " + data[data.length - 1]);
+                rootLogger.info("Было получено"+data.length+" байт");
+                //rootLogger.info("Получено \"" + new String(data) + "\"");
+                //rootLogger.info("Последний байт: " + data[data.length - 1]);
 
                 if (data[data.length - 1] == 1) {
                     received = true;
                     rootLogger.info("Получение данных окончено");
                 }
                 result = Bytes.concat(result, Arrays.copyOf(data, data.length - 1));
-                // buffer= ByteBuffer.wrap(result);
+                 buffer= ByteBuffer.wrap(result);
             }
 
-            return result;
-        // return buffer;
+         return buffer;
     }
 
     private byte[] receiveBufferData(int bufferSize) throws IOException {
@@ -62,32 +61,4 @@ public class RequestReader {
                 return buffer.array();
             }
         }
-
-    /**
-     * Норм штука
-     * @return
-     * @throws IOException
-     * @throws InterruptedException
-     */
-    public ByteBuffer receiveBuffer() throws IOException, InterruptedException {
-
-        ByteBuffer byteBuffer = ByteBuffer.allocate(4096);
-        int waitingTime = 0;
-
-        while (waitingTime < 1000) {
-            byteBuffer.clear();
-            SocketAddress from = clientChannel.receive(byteBuffer);
-
-            if (from != null) {
-                byteBuffer.flip();
-                return byteBuffer;
-            }
-            Thread.sleep(500);
-            waitingTime++;
-        }
-        rootLogger.error("Сервер не отвечает. Завершение работы клиента");
-        System.exit(0);
-        return byteBuffer;
-    }
-
 }

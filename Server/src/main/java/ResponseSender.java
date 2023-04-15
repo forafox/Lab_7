@@ -41,43 +41,9 @@ public class ResponseSender implements Runnable{
         this.receiverPort = receiverPort;
         this.byteArr=byteArr;
     }
-//    @Override
-//    public void run()  {
-//
-//        byte[] data = strData.getBytes(StandardCharsets.UTF_8);
-//        byte[][] ret = new byte[(int)Math.ceil(data.length / (double)DATA_SIZE)][DATA_SIZE];
-//
-//        int start = 0;
-//        for(int i = 0; i < ret.length; i++) {
-//            ret[i] = Arrays.copyOfRange(data, start, start + DATA_SIZE);
-//            start += DATA_SIZE;
-//        }
-//
-//        rootLogger.info("Отправляется " + ret.length + " чанков...");
-//
-//        for(int i = 0; i < ret.length; i++) {
-//            try {
-//                var chunk = ret[i];
-//                if (i == ret.length - 1) {
-//                    var lastChunk = Bytes.concat(chunk, new byte[]{1});
-//                    var dp = new DatagramPacket(lastChunk, PACKET_SIZE, receiverAddress, receiverPort);
-//                    serverSocket.send(dp);
-//                    rootLogger.info("Последний чанк размером " + chunk.length + " отправлен на сервер.");
-//                } else {
-//                    var dp = new DatagramPacket(ByteBuffer.allocate(PACKET_SIZE).put(chunk).array(), PACKET_SIZE, receiverAddress, receiverPort);
-//                    serverSocket.send(dp);
-//                    rootLogger.info("Чанк размером " + chunk.length + " отправлен на сервер.");
-//                }
-//            }catch (IOException ex){
-//                rootLogger.warn("Произошла ошибка при отправке: "+ex.getMessage());
-//            }
-//        }
-//
-//        rootLogger.info("Отправка данных завершена");
-//    }
-
-    public void sendData(String str, SocketAddress addr) throws IOException {
-        byte[] data = str.getBytes(StandardCharsets.UTF_8);
+    @Override
+    public void run()  {
+        byte[] data = byteArr;
 
         byte[][] ret = new byte[(int)Math.ceil(data.length / (double)DATA_SIZE)][DATA_SIZE];
 
@@ -93,36 +59,26 @@ public class ResponseSender implements Runnable{
             var chunk = ret[i];
             if (i == ret.length - 1) {
                 var lastChunk = Bytes.concat(chunk, new byte[]{1});
-                var dp = new DatagramPacket(lastChunk, PACKET_SIZE, addr);
-                serverSocket.send(dp);
+                var dp = new DatagramPacket(lastChunk, PACKET_SIZE, receiverAddress, receiverPort);
+                try {
+                    serverSocket.send(dp);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
                 rootLogger.info("Последний чанк размером " + chunk.length + " отправлен на сервер.");
             } else {
-                var dp = new DatagramPacket(ByteBuffer.allocate(PACKET_SIZE).put(chunk).array(), PACKET_SIZE, addr);
-                serverSocket.send(dp);
+                var dp = new DatagramPacket(ByteBuffer.allocate(PACKET_SIZE).put(chunk).array(), PACKET_SIZE, receiverAddress, receiverPort);
+                try {
+                    serverSocket.send(dp);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
                 rootLogger.info("Чанк размером " + chunk.length + " отправлен на сервер.");
             }
         }
 
         rootLogger.info("Отправка данных завершена");
     }
-
-    @Override
-    public void run() {
-        if (byteArr.length > 4096) {
-            rootLogger.warn("Размер пакета превышает допустимый. Разделить пакеты пока не представляется возможным");
-        } else {
-            byte[] byteUdp = new byte[byteArr.length];
-            System.arraycopy(byteArr, 0, byteUdp, 0, byteUdp.length);
-            DatagramPacket dp = new DatagramPacket(byteUdp, byteUdp.length, receiverAddress, receiverPort);
-            try {
-                serverSocket.send(dp);
-            } catch (IOException exception) {
-                rootLogger.warn("Произошла ошибка при отправке: " + exception.getMessage());
-            }
-        }
-        //rootLogger.info("ResponseSender say: "+Thread.currentThread().getName() +" Правильно отработал");
-    }
-
     public DatagramSocket getServerSocket() {
         return serverSocket;
     }

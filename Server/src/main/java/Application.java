@@ -32,8 +32,7 @@ public class Application {
             LabWork[] labWorks = cdh.loadInMemory();
             CollectionManager collectionManager = new CollectionManager(labWorks);
             rootLogger.info("Коллекция была загружена из бд.");
-            //Lock locker = new ReentrantLock();
-            //Lock locker = new;
+
             ReadWriteLock locker = new ReentrantReadWriteLock();
             CommandInvoker commandInvoker = new CommandInvoker(collectionManager, cdh, locker);
             rootLogger.info("Класс Application готов.");

@@ -77,6 +77,7 @@ public class UpdateElementCommand extends Command{
                 if (!LabWorkFieldValidation.validate("id", arguments[0])) {
                     throw new CannotExecuteCommandException("Введены невалидные аргументы: id =" + arguments[0]);
                 } else {
+
                     result.add(arguments[0]);
                     printStream.println(CollectionManager.getFieldNames());
                     printStream.println("\nВыберите поля для изменения:");
@@ -114,7 +115,6 @@ public class UpdateElementCommand extends Command{
 
             try {
                 locker.writeLock().lock();
-
                 if (cdh.isOwner(id, userData)) {
                     for (int i = 1; i < spArguments.length; i++) {
                         String[] subStr = spArguments[i].split(delimeter);
@@ -126,7 +126,7 @@ public class UpdateElementCommand extends Command{
                     collectionManager.removeKey(labWork.getId());
                     collectionManager.insertWithId(labWork.getId(), labWork, printStream);
                 } else {
-                    printStream.println("Элемента с указанным id ДЛЯ ВАС не существует");
+                    printStream.println("Элемента с указанным id не существует или вы не являетесь его владельцем");
                 }
             } finally {
                 locker.writeLock().unlock();
