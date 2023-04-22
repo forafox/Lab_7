@@ -71,7 +71,7 @@ public class LabWork implements Serializable {
     public LabWork(String name, Coordinates coordinates, ZonedDateTime creationDate,
                    Integer minimalPoint, Double maximumPoint, Integer personalQualitiesMaximum,
                    Difficulty difficulty, Person person) {
-        this.id = uniqueId++;
+        this.id = null;
         this.name = name;
         this.coordinates = coordinates;
         this.creationDate = creationDate;

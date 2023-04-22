@@ -1,6 +1,5 @@
 
 import com.google.common.primitives.Bytes;
-import commands.abstr.CommandContainer;
 import database.UserData;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -8,9 +7,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.ByteArrayInputStream;
 import java.io.ObjectInputStream;
 import java.net.*;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.concurrent.Callable;
 
 /**
@@ -50,12 +47,12 @@ public class RequestReader implements Callable<UserData> {
 
             serverSocket.receive(dp);
             addr = dp.getSocketAddress();
-            rootLogger.info("Получено \"" + new String(data) + "\" от " + dp.getAddress());
-            rootLogger.info("Последний байт: " + data[data.length - 1]);
-
+            //rootLogger.info("Получено \"" + new String(data) + "\" от " + dp.getAddress());
+            //rootLogger.info("Последний байт: " + data[data.length - 1]);
+            rootLogger.info("Data received from "+dp.getAddress()+","+dp.getPort());
             if (data[data.length - 1] == 1) {
                 received = true;
-                rootLogger.info("Получение данных от " + dp.getAddress() +","+dp.getPort() + " окончено");
+                rootLogger.info("Data received from " + dp.getAddress() +","+dp.getPort() + " finished");
             }
             result = Bytes.concat(result, Arrays.copyOf(data, data.length - 1));
         }
@@ -64,7 +61,6 @@ public class RequestReader implements Callable<UserData> {
 
         UserData userData=(UserData) ois.readObject();
         userData.setInetAddress(dp.getAddress());
-        rootLogger.info("Порт перед установкой к пользователю равен"+ dp.getPort());
         userData.setPort(dp.getPort());
         return userData;
     }

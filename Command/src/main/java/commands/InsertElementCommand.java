@@ -73,43 +73,23 @@ public class InsertElementCommand extends Command{
     public void execute(String[] arguments, InvocationStatus invocationStatus, PrintStream printStream, UserData userData, ReadWriteLock locker) throws CannotExecuteCommandException {
         if (invocationStatus.equals(InvocationStatus.CLIENT)) {
             result = new ArrayList<>();
-            if (arguments.length > 1) {
-                throw new CannotExecuteCommandException("Количество аргументов у данной команды должно быть не более 1.");
+            if (arguments.length > 0) {
+                throw new CannotExecuteCommandException("У данной команды нет аргументов.");
             }
-            if (arguments.length == 1) {
-                if (LabWorkFieldValidation.validate("id", arguments[0])) {
-                    printStream.println("Введите значения полей для элемента коллекции:\n");
-                    LabWork labWork = labWorkFieldsReader.read(Integer.parseInt(arguments[0]));
-                    labWork.setOwner(userData.getLogin());
-                    super.result.add(Integer.parseInt(arguments[0])); //Integer id - result(0), dragon - result(1)
-                    super.result.add(labWork);
-                } else
-                    throw new CannotExecuteCommandException("Введены невалидные аргументы: id = " + arguments[0]);
-            }else{
-                    printStream.println("Введите значения полей для элемента коллекции:\n");
-                    LabWork labWork = labWorkFieldsReader.read();
-                    labWork.setOwner(userData.getLogin());
-                    super.result.add(labWork);
+           else {
+                printStream.println("Введите значения полей для элемента коллекции:\n");
+                LabWork labWork = labWorkFieldsReader.read();
+                labWork.setOwner(userData.getLogin());
+                super.result.add(labWork);
             }
         } else if (invocationStatus.equals(InvocationStatus.SERVER)) {
             try{
             locker.writeLock().lock();
-            if(result.size()==2) {
-                LabWork labWork = (LabWork) this.getResult().get(1);
-                if (!cdh.isAnyRowById(labWork.getId())) {
-                    cdh.insertRow(labWork);
-                    collectionManager.insertWithId((Integer) this.getResult().get(0), labWork, printStream);
-                    printStream.println("Элемент добавлен в коллекцию.");
-                }
-            }else {
                 LabWork labWork = (LabWork) this.getResult().get(0);
-                if (!cdh.isAnyRowById(labWork.getId())) {
-                    labWork.setId(CollectionManager.getRandomId());
-                    cdh.insertRow(labWork);
-                    collectionManager.insert(labWork);
+                    cdh.insertRowNOTid(labWork);
+                    labWork.setId(cdh.getIdByLabWork(labWork));
+                    collectionManager.insertWithId(labWork.getId(),labWork,printStream);
                     printStream.println("Элемент добавлен в коллекцию.");
-                }
-            }
         } catch (SQLException e) {
                 throw new RuntimeException(e);
             } finally {

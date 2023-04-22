@@ -4,6 +4,7 @@ import commands.CommandInvoker;
 import database.CollectionDatabaseHandler;
 import database.DatabaseConnection;
 import database.UserDatabaseHandler;
+import org.apache.commons.compress.utils.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import java.io.*;
@@ -20,6 +21,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * @date 25.03.2023 18:11
  */
 public class Application {
+    private static final String RELATIVE_PATH_TO_CREDENTIALS = "data/credentials.txt";
     private static final Logger rootLogger = LogManager.getRootLogger();
 
     private Connection dbConnection;
@@ -45,11 +47,11 @@ public class Application {
             CommandProcessor commandProcessor = new CommandProcessor(udh, cdh, commandInvoker);
 
             Server server = new Server(requestReader, responseSender, commandProcessor);
-            rootLogger.info("Старт нового потока.Началась обработка нового полученного запроса.");
+            rootLogger.info("Start the main server");
             new Thread(server).start();
         }
         catch (SQLException ex) {
-            System.out.println("Ошибка при загрузке коллекции в память. Завершение работы сервера.");
+            rootLogger.error("Ошибка при загрузке коллекции в память. Завершение работы сервера.");
             System.exit(-10);
         }
     }
@@ -57,14 +59,24 @@ public class Application {
     private void createDatabaseConnection(){
         Scanner scanner=new Scanner(System.in);
         rootLogger.info("Введите данные для входа. Логин и Пароль");
-       // String jdbcHeliosURL="jdbc:postgresql://pg:5444/studs";
+        //String jdbcHeliosURL="jdbc:postgresql://pg:5444/studs";
         String jdbcHeliosURL="jdbc:postgresql://localhost:5432/studs";
-        String jdbcLocalURL="jdbc:postgresql://localhost:5489/studs";
+        //String jdbcLocalURL="jdbc:postgresql://localhost:5489/studs";
         String login="";
         String password="";
         try {
-            scanner=new Scanner(new FileReader("D:\\JavaProject\\Lab_7\\Server\\src\\main\\resources\\credentials.txt"));
-        }catch (FileNotFoundException ex){
+           // scanner=new Scanner(new FileReader(getClass().getClassLoader().getResource(RELATIVE_PATH_TO_CREDENTIALS).getFile()));
+            InputStream in = getClass().getResourceAsStream(RELATIVE_PATH_TO_CREDENTIALS);
+            File file = File.createTempFile("stream2file", ".tmp");
+            file.deleteOnExit();
+            try (FileOutputStream out = new FileOutputStream(file)) {
+                IOUtils.copy(in, out);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            scanner=new Scanner(file);
+
+        }catch (IOException ex){
             rootLogger.error(ex.getMessage());
             rootLogger.error("Не найден файл credentials.txt с данными для входа. Завершение работы");
             System.exit(-1);
@@ -85,7 +97,6 @@ public class Application {
         }catch (SQLException ex){
             rootLogger.error("Соединение с бд не установлено. Завершение работы сервера");
             rootLogger.error(ex.getMessage());
-            rootLogger.error("Завершение туть");
             System.exit(-1);
         }
     }

@@ -68,6 +68,8 @@ public class Application {
                 userData.setIsConnected(isConnected);
                 if (userData.getIsConnected()) {
                     rootLogger.info("Авторизация пользователя прошла успешно.");
+                    System.out.printf("Welcome to Lab_7, %s!\n",userData.getLogin());
+                    System.out.print("Type \"help\" to get a list of commands\n");
                 } else {
                     rootLogger.warn("Неверный логин или пароль. Повторите ввод. Осталось попыток:" + --count);
                     continue;
@@ -124,38 +126,28 @@ public class Application {
         String password = null;
 
         System.out.println("Введите логин:");
-        login = scanner.next().trim();
-
+  //      login = scanner.next().trim();
+        login="Andrey";
         System.out.println("Введите пароль:");
-        Console console = System.console();
-
-        while (password == null || password.equals("")) {
-            if (console != null) {
-                char[] arrPass = console.readPassword();
-                if (arrPass == null) {
-                    rootLogger.warn("Пароль не может быть пустым. Повторите попытку");
-                } else password = String.valueOf(arrPass);
-            } else {
-                password = scanner.next().trim();
-            }
-        }
-        DataEncryptor dataEncryptor = new DataEncryptor();
+    //    Console console = System.console();
+        password="12345";
+//        while (password == null || password.equals("")) {
+//            if (console != null) {
+//                char[] arrPass = console.readPassword();
+//                if (arrPass == null) {
+//                    rootLogger.warn("Пароль не может быть пустым. Повторите попытку");
+//                } else password = String.valueOf(arrPass);
+//            } else {
+//                password = scanner.next().trim();
+//            }
+//        }
         userData.setLogin(login);
         userData.setPassword(DataEncryptor.sha256(password));
-        //userData.setPassword(dataEncryptor.encryptStringSHA256(password));
-       // userData.setPassword(password);
-/////////////
-        //responseSender.sendUserData(userData, inetSocketAddress);
-        /////////////////
+
         responseSender.sendUserDataOLD(userData,inetSocketAddress);
         ByteBuffer byteBufferOLD =requestReader.receiveBufferDataOLD();
         ByteArrayInputStream baisOLD = new ByteArrayInputStream(byteBufferOLD.array(), 0, byteBufferOLD.limit());
         ObjectInputStream oisOLD = new ObjectInputStream(baisOLD);
-        //////
-//        ByteBuffer byteBuffer = requestReader.receiveBuffer();
-//        ByteArrayInputStream bais = new ByteArrayInputStream(byteBuffer.array(), 0, byteBuffer.limit());
-//        ObjectInputStream ois = new ObjectInputStream(bais);
-        //////
         return oisOLD.readBoolean();
     }
     public void cycle(ResponseSender responseSender, RequestReader requestReader, CommandProcessor commandProcessor) throws IOException, InterruptedException {
@@ -175,11 +167,9 @@ public class Application {
                 if (isCommandAcceptable) {
 
                     userData.setCommandContainer(commandInvoker.getLastCommandContainer());
-                    //responseSender.sendUserData(userData, inetSocketAddress);
                     responseSender.sendUserDataOLD(userData,inetSocketAddress);
 
                     rootLogger.info("Данные были отправлены.");
-                    //ByteBuffer byteBuffer = requestReader.receiveBuffer();
                     ByteBuffer byteBuffer =requestReader.receiveBufferDataOLD();
                     rootLogger.info("Данные были получены.");
                     System.out.println(new String(byteBuffer.array()).trim() + "\n");
