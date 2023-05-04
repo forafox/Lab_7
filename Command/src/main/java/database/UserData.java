@@ -80,4 +80,11 @@ public class UserData implements Serializable {
     public void setPort(Integer port) {
         this.port = port;
     }
+
+    @Override
+    public String toString() {
+        return "UserData{" +
+                "login='" + login + '\'' +
+                '}';
+    }
 }

@@ -7,6 +7,10 @@ import database.UserDatabaseHandler;
 import org.apache.commons.compress.utils.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.hibernate.SessionFactory;
+//import utils.HibernateUtil;
+import utils.HibernateUtil;
+
 import java.io.*;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -21,14 +25,17 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * @date 25.03.2023 18:11
  */
 public class Application {
+    private static SessionFactory sessionFactory;
     private static final String RELATIVE_PATH_TO_CREDENTIALS = "data/credentials.txt";
+    private static final String RELATIVE_PATH_TO_HIBERNATE_CONFIG = "hibernate.cfg.xml";
     private static final Logger rootLogger = LogManager.getRootLogger();
 
     private Connection dbConnection;
 
     public void start(int port){
         this.createDatabaseConnection();
-        UserDatabaseHandler udh=new UserDatabaseHandler(dbConnection);
+        UserDatabaseHandler udh=new UserDatabaseHandler(sessionFactory);
+        //UserDatabaseHandler udh=new UserDatabaseHandler(dbConnection);
         CollectionDatabaseHandler cdh=new CollectionDatabaseHandler(dbConnection);
         try {
             LabWork[] labWorks = cdh.loadInMemory();
@@ -48,7 +55,7 @@ public class Application {
 
             Server server = new Server(requestReader, responseSender, commandProcessor);
             rootLogger.info("Start the main server");
-            new Thread(server).start();
+            server.startWork();
         }
         catch (SQLException ex) {
             rootLogger.error("Ошибка при загрузке коллекции в память. Завершение работы сервера.");
@@ -84,13 +91,24 @@ public class Application {
         try{
             login=scanner.nextLine().trim();
             password=scanner.nextLine().trim();
-            rootLogger.info(login);
-            rootLogger.info(password);
         }catch (NoSuchElementException ex){
             rootLogger.error("Не найдены данные для входа. Завершение работы.");
             System.exit(-1);
         }
+        rootLogger.info("Login and password were uploaded from resources");
+        //
+//        ClassLoader classLoader = Application.class.getClassLoader();
+//        File f = new File(classLoader.getResource(RELATIVE_PATH_TO_HIBERNATE_CONFIG).getFile());
+        // SessionFactory sessionFactory = new AnnotationConfiguration().configure(f).buildSessionFactory();
+         sessionFactory = HibernateUtil.getSessionFactory(jdbcHeliosURL, login, password);
+//        Session session = sessionFactory.openSession();
+//        session.close();
+        //
         DatabaseConnection databaseConnection = new DatabaseConnection(jdbcHeliosURL, login, password);
+
+        /////
+
+        /////
         try {
             dbConnection = databaseConnection.connectToDatabase();
             rootLogger.info("Соединение с бд установлено");

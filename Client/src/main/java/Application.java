@@ -76,12 +76,13 @@ public class Application {
                 }
                 rootLogger.info("Клиент готов к чтению команд.");
                 this.cycle(responseSender, requestReader, commandProcessor);
+                count=5;
             }
             if (count == 0) {
                 rootLogger.error("Попытки исчерпаны. Завершение работы.");
                 System.exit(-1);
             }
-            this.cycle(responseSender, requestReader, commandProcessor);
+           // this.cycle(responseSender, requestReader, commandProcessor);
 
         } catch (NoSuchElementException ex) {
             rootLogger.error("\nАварийное завершение работы.");
@@ -126,21 +127,19 @@ public class Application {
         String password = null;
 
         System.out.println("Введите логин:");
-  //      login = scanner.next().trim();
-        login="Andrey";
+        login = scanner.next().trim();
         System.out.println("Введите пароль:");
-    //    Console console = System.console();
-        password="12345";
-//        while (password == null || password.equals("")) {
-//            if (console != null) {
-//                char[] arrPass = console.readPassword();
-//                if (arrPass == null) {
-//                    rootLogger.warn("Пароль не может быть пустым. Повторите попытку");
-//                } else password = String.valueOf(arrPass);
-//            } else {
-//                password = scanner.next().trim();
-//            }
-//        }
+        Console console = System.console();
+        while (password == null || password.equals("")) {
+            if (console != null) {
+                char[] arrPass = console.readPassword();
+                if (arrPass == null) {
+                    rootLogger.warn("Пароль не может быть пустым. Повторите попытку");
+                } else password = String.valueOf(arrPass);
+            } else {
+                password = scanner.next().trim();
+            }
+        }
         userData.setLogin(login);
         userData.setPassword(DataEncryptor.sha256(password));
 
@@ -155,13 +154,15 @@ public class Application {
         boolean isNeedInput = true;
         boolean isCommandAcceptable = false;
 
-        String line;
+        String line = null;
         while (isConnected) {
             if (isNeedInput) {
                 System.out.println("Введите название команды:");
                 userIO.printPreamble();
                 line = userIO.readLine();
                 isCommandAcceptable = commandProcessor.executeCommand(line, userData);
+                //repair
+                if(line.equals("log_out")) isCommandAcceptable=false;
             }
             try {
                 if (isCommandAcceptable) {
@@ -175,6 +176,10 @@ public class Application {
                     System.out.println(new String(byteBuffer.array()).trim() + "\n");
 
                     isNeedInput = true;
+                } else if (line.equals("log_out")) {
+                    isConnected=false;
+                    System.out.printf("\nLog out of your account. Goodbye, %s !\n\n",userData.getLogin());
+
                 }
             } catch (PortUnreachableException | SocketTimeoutException ex) {
                 if (ex instanceof PortUnreachableException) {

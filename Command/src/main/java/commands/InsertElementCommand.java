@@ -9,7 +9,6 @@ package commands;
 
 import collection.CollectionManager;
 import collection.LabWork;
-import collection.LabWorkFieldValidation;
 import commands.abstr.Command;
 import commands.abstr.InvocationStatus;
 import database.CollectionDatabaseHandler;

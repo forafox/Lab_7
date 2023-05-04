@@ -123,6 +123,7 @@ public class CommandInvoker {
      * Метод, добавляющий клиентские команды в соответствующую коллекции.
      */
     private void putClientCommands() {
+        clientCommands.put("log_out", new LogOutCommand());
         clientCommands.put("info", new InfoCommand());
         clientCommands.put("show", new ShowCommand());
         clientCommands.put("clear", new ClearCommand());

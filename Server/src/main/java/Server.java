@@ -12,7 +12,7 @@ import java.util.concurrent.*;
  * @version 1.0
  * @date 04.04.2023 0:24
  */
-public class Server implements Runnable{
+public class Server {
     private static final Logger rootLogger = LogManager.getRootLogger();
     private final RequestReader requestReader;
     private final ResponseSender responseSender;
@@ -36,17 +36,14 @@ public class Server implements Runnable{
         this.commandProcessor = cp;
     }
 
-    @Override
-    public void run() {
+    public void startWork() {
         while (true) {
             ForkJoinTask<UserData> request1 = forkJoinPool.submit(requestReader);
-            synchronized (requestList) {
                 try {
                     requestList.add(request1.get());
                 } catch (InterruptedException | ExecutionException e) {
                     e.printStackTrace();
                 }
-            }
 
             UserData[] requestArray = requestList.toArray(new UserData[0]);//массив пользователей
             //здесь мы всех регаем или смотрим подключение
@@ -72,10 +69,9 @@ public class Server implements Runnable{
             UserData[] responseKeys;
             ByteArrayOutputStream[] responseValues;
 
-            synchronized (responseMap) {
-                responseKeys = responseMap.keySet().toArray(new UserData[0]);
-                responseValues = responseMap.values().toArray(new ByteArrayOutputStream[0]);
-            }
+            responseKeys = responseMap.keySet().toArray(new UserData[0]);
+            responseValues = responseMap.values().toArray(new ByteArrayOutputStream[0]);
+
             //Отправка всех ответов.
             for (int i = 0; i < responseKeys.length; i++) {
                 this.sendResponse(responseKeys[i],responseValues[i]);
@@ -88,9 +84,8 @@ public class Server implements Runnable{
      * @param userData
      */
     private void findNextStep(UserData userData) {
-        synchronized (requestList) {
             requestList.remove(userData);
-        }
+
         if (!userData.getIsConnected()) {
             if (userData.getIsNewUser()) {
                 commandProcessor.getUdh().addUser(userData);
@@ -102,16 +97,14 @@ public class Server implements Runnable{
                 commandProcessor.getUdh().ConnectUser(userData);
             }
         }
-        synchronized (commandList) {
             commandList.add(userData);
-        }
+
     }
 
     private Thread startExecution(UserData userData) {
         rootLogger.info("Обработка запроса для " + userData.getPort() + " началась.");
-        synchronized (commandList) {
-            commandList.remove(userData);
-        }
+        commandList.remove(userData);
+
         CommandExecutor commandExecutor = new CommandExecutor(commandProcessor, userData, responseMap);
         //Новый поток для обработки полученного запроса
         Thread t = new Thread(commandExecutor);
@@ -120,9 +113,8 @@ public class Server implements Runnable{
     }
 
     private void sendResponse(UserData userData, ByteArrayOutputStream baos) {
-        synchronized (responseMap) {
-            responseMap.remove(userData, baos);
-        }
+        responseMap.remove(userData, baos);
+
         rootLogger.info("Отправка для " + userData.getPort() + " началась.");
         //Новый поток для отправки ответа
         serviceResponse.submit(new ResponseSender(responseSender.getServerSocket(), userData.getInetAddress(), userData.getPort(), baos.toByteArray()));

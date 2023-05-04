@@ -1,9 +1,14 @@
 package database;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import dao.UserDAO;
+import jakarta.persistence.Query;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Root;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+
+import java.util.List;
 
 /**
  * @author Karabanov Andrey
@@ -11,30 +16,31 @@ import java.sql.SQLException;
  * @date 03.04.2023 23:54
  */
 public class UserDatabaseHandler {
+    private SessionFactory sessionFactory;
 
-    private final Connection connection;
-
-    public UserDatabaseHandler(Connection connection) {
-        this.connection = connection;
+    public UserDatabaseHandler(SessionFactory sessionFactory) {
+        this.sessionFactory = sessionFactory;
     }
 
     public void addUser(UserData userData) {
         String user_login = userData.getLogin();
         String user_pass = userData.getPassword();
-        String sql = "INSERT INTO USERDATA (USER_LOGIN, USER_PASSWORD) VALUES (?, ?)";
-        try {
-            PreparedStatement ps = connection.prepareStatement(sql);
-            ps.setString(1, user_login);
-            ps.setString(2, user_pass);
-
-            ps.executeUpdate();
-            ps.close();
-
-        } catch (SQLException ex) {
-            System.out.println(ex.getMessage());
-            System.out.println(user_login+user_pass);
+        Session session = sessionFactory.openSession();
+        String hql="SELECT name FROM users_test WHERE name=:username";
+        Query query=session.createQuery(hql , String.class);
+        query.setParameter("username", userData.getLogin());
+        if (query.getResultList().isEmpty()) {
+            UserDAO userDAO = new UserDAO();
+            userDAO.setName(user_login);
+            userDAO.setPasswordDigest(user_pass);
+            session.beginTransaction();
+            session.persist(userDAO);
+            session.getTransaction().commit();
+        } else {
+            System.out.println(user_login);
             System.out.println("Пользователь с указанным login уже существует\nДальнейшая ответственность за командой verifyUser");
         }
+        session.close();
     }
 
     public void ConnectUser(UserData userData) {
@@ -42,18 +48,15 @@ public class UserDatabaseHandler {
     }
 
     public void verifyUser(UserData userData) {
-        String user_login = userData.getLogin();
-        String user_pass = userData.getPassword();
-        String sql = "SELECT * FROM USERDATA WHERE USER_LOGIN = ? AND user_password = ?";
-        try {
-            PreparedStatement ps = connection.prepareStatement(sql);
-            ps.setString(1, user_login);
-            ps.setString(2, user_pass);
-            ResultSet rs = ps.executeQuery();
-            userData.setIsNewUser(!rs.isBeforeFirst());
-            ps.close();
-        } catch (SQLException ex) {
-            System.out.println("Ошибка подключения к базе данных. Команда verify_user.");
+        Session session = sessionFactory.openSession();
+        String hql="SELECT name FROM users_test WHERE name=:username and passwordDigest=:password";
+        Query query=session.createQuery(hql , String.class);
+        query.setParameter("username", userData.getLogin()).setParameter("password",userData.getPassword());
+        if (query.getResultList().isEmpty()) {
+            userData.setIsNewUser(true);
+        } else {
+            userData.setIsNewUser(false);
         }
+        session.close();
     }
 }

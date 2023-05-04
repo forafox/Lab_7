@@ -1,5 +1,9 @@
 package collection;
 
+
+
+import database.UserData;
+
 import java.io.Serializable;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -56,6 +60,7 @@ public class LabWork implements Serializable {
      */
     private Person person;
     private String user_login;
+    private UserData userData;
 
     /**
      * Конструктор класса с параметрами (без id)
@@ -110,6 +115,14 @@ public class LabWork implements Serializable {
                                         Difficulty difficulty, Person person,String owner){
         LabWork labWork=new LabWork(id,name,coordinates,creationDate,minimalPoint,maximumPoint,personalQualitiesMaximum,difficulty,person);
         labWork.setOwner(owner);
+        return labWork;
+    }
+
+    public static LabWork createLabWork(Integer id, String name, Coordinates coordinates, ZonedDateTime creationDate,
+                                        Integer minimalPoint, Double maximumPoint, Integer personalQualitiesMaximum,
+                                        Difficulty difficulty, Person person, UserData userData){
+        LabWork labWork=new LabWork(id,name,coordinates,creationDate,minimalPoint,maximumPoint,personalQualitiesMaximum,difficulty,person);
+        labWork.setUserData(userData);
         return labWork;
     }
 
@@ -277,6 +290,14 @@ public class LabWork implements Serializable {
     }
     public void setOwner(String owner){
         this.user_login=owner;
+    }
+
+    public UserData getUserData() {
+        return userData;
+    }
+
+    public void setUserData(UserData userData) {
+        this.userData = userData;
     }
 
     /**

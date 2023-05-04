@@ -1,6 +1,7 @@
 package database;
 
 import collection.*;
+import org.hibernate.SessionFactory;
 
 import java.sql.*;
 import java.time.ZoneId;
@@ -15,6 +16,7 @@ import java.util.TreeMap;
  */
 public class CollectionDatabaseHandler {
     private final Connection connection;
+//    private final SessionFactory sessionFactory=Application.SessionFactory;
 
     public CollectionDatabaseHandler(Connection connection) {
         this.connection = connection;
