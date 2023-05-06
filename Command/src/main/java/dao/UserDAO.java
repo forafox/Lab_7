@@ -2,7 +2,6 @@ package dao;
 
 import database.UserData;
 import jakarta.persistence.*;
-import org.hibernate.annotations.ColumnDefault;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -21,8 +20,10 @@ public class UserDAO implements Serializable {
     }
 
     public UserDAO(UserData user) {
-        this.passwordDigest = user.getPassword();
+            this.passwordDigest=user.getLogin();
+            this.passwordDigest=user.getPassword();
     }
+
 
     @Id
     @GeneratedValue(strategy=GenerationType.IDENTITY)
@@ -38,13 +39,13 @@ public class UserDAO implements Serializable {
     @Column(name="salt", length=10)
     private String salt;
 
-    @OneToMany(mappedBy = "creator" ,fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "creator" ,fetch = FetchType.EAGER)
     private List<LabWorkDAO> labWorks = new ArrayList<>();
 
-    @OneToMany(mappedBy = "creator" ,fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "creator" ,fetch = FetchType.EAGER)
     private List<LocationDAO> locations = new ArrayList<>();
 
-    @OneToMany(mappedBy = "creator" ,fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "creator" ,fetch = FetchType.EAGER)
     private List<PersonDAO> persons = new ArrayList<>();
 
     public int getId() {
@@ -79,22 +80,28 @@ public class UserDAO implements Serializable {
         this.salt = salt;
     }
 
-    public List<LabWorkDAO> getLabWorksDAO() {
-        return labWorks;
-    }
+
 
     public void setLabWorks(List<LabWorkDAO> labWorks) {
         this.labWorks = labWorks;
     }
 
-    public List<LocationDAO> getLocations() {
+    public List<LocationDAO> getLocationsDAO() {
         return locations;
     }
-    public void setLocations(List<LocationDAO> list){
+    public void setLocationsDAO(List<LocationDAO> list){
         this.locations=list;
     }
 
-    public void setPersons(List<PersonDAO> list) {
+    public void setPersonsDAO(List<PersonDAO> list) {
         this.persons = list;
+    }
+
+    public List<LabWorkDAO> getLabWorksDAO() {
+        return labWorks;
+    }
+
+    public List<PersonDAO> getPersonsDAO() {
+        return persons;
     }
 }

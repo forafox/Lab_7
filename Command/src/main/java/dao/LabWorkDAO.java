@@ -31,6 +31,7 @@ public class LabWorkDAO implements Serializable {
         this.creator=new UserDAO(labWork.getUserData());
     }
     public void update(LabWork labWork){
+        this.id=labWork.getId();
         this.name=labWork.getName();
         this.coordinateX=labWork.getCoordinates().getX();
         this.coordinateY=labWork.getCoordinates().getY();
@@ -39,7 +40,6 @@ public class LabWorkDAO implements Serializable {
         this.maximumPoint=labWork.getMaximumPoint();
         this.personalQualitiesMaximum=labWork.getPersonalQualitiesMaximum();
         this.difficulty=labWork.getDifficulty();
-        this.creator=new UserDAO(labWork.getUserData());
     }
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -63,14 +63,14 @@ public class LabWorkDAO implements Serializable {
     @Column(name="difficulty")
     private Difficulty difficulty;
 
-    @OneToOne (optional=false, cascade=CascadeType.ALL)
+    @OneToOne (optional=false, cascade=CascadeType.MERGE,orphanRemoval = true )
     @JoinColumn (name="location_id")
     private LocationDAO locationDAO;
 
-    @OneToOne (optional=false, cascade=CascadeType.ALL)
+    @OneToOne (optional=false, cascade=CascadeType.MERGE,orphanRemoval = true)
     @JoinColumn (name="person_id")
     private PersonDAO personDAO;
-    @ManyToOne(optional = false, cascade = CascadeType.ALL)
+    @ManyToOne(optional = false, cascade=CascadeType.MERGE)
     @JoinColumn(name="creator", nullable=false)
     private UserDAO creator;
 
@@ -153,4 +153,31 @@ public class LabWorkDAO implements Serializable {
     public void setOwner(UserDAO owner) {
         this.creator = owner;
     }
+
+    public LocationDAO getLocationDAO() {
+        locationDAO.setOwner(this.getOwner());
+        return locationDAO;
+    }
+
+    public void setLocationDAO(LocationDAO locationDAO) {
+        this.locationDAO = locationDAO;
+    }
+
+    public PersonDAO getPersonDAO() {
+        personDAO.setOwner(this.getOwner());
+        return personDAO;
+    }
+
+    public void setPersonDAO(PersonDAO personDAO) {
+        this.personDAO = personDAO;
+    }
+
+    public UserDAO getCreator() {
+        return creator;
+    }
+
+    public void setCreator(UserDAO creator) {
+        this.creator = creator;
+    }
+
 }

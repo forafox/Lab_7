@@ -29,9 +29,10 @@ public class HibernateUtil {
             props.put("hibernate.connection.pool_size", "100");
             props.put("hibernate.current_session_context_class", "thread");
             props.put("hibernate.connection.autocommit", "true");
-            props.put("hibernate.show_sql", "true");
+//            props.put("hibernate.show_sql", "true");
             props.put("hibernate.cache.provider_class", "org.hibernate.cache.internal.NoCacheProvider");
             props.put("hibernate.hbm2ddl.auto", "update");
+            props.put("hibernate.show_sql","false");
 
             Configuration configuration = new Configuration();
             configuration.setProperties(props);

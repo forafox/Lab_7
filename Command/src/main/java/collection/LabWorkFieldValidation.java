@@ -48,6 +48,12 @@ public class LabWorkFieldValidation {
                 }
                 case "maximumPoint": {
                     if (value == null || value.equals("")) throw new NullPointerException();
+                    if (Double.parseDouble(value) > 0) return true;
+                    break;
+                }
+
+                case "minimalPoint": {
+                    if (value == null || value.equals("")) throw new NullPointerException();
                     if (Integer.parseInt(value) > 0) return true;
                     break;
                 }

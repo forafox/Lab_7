@@ -84,7 +84,8 @@ public class InsertElementCommand extends Command{
         } else if (invocationStatus.equals(InvocationStatus.SERVER)) {
             try{
             locker.writeLock().lock();
-                LabWork labWork = (LabWork) this.getResult().get(0);
+             LabWork labWork = (LabWork) this.getResult().get(0);
+                labWork.setUserData(userData);
                     cdh.insertRowNOTid(labWork);
                     labWork.setId(cdh.getIdByLabWork(labWork));
                     collectionManager.insertWithId(labWork.getId(),labWork,printStream);

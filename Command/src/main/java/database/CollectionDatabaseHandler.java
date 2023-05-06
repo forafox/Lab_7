@@ -1,12 +1,24 @@
 package database;
 
 import collection.*;
+import dao.LabWorkDAO;
+import dao.LocationDAO;
+import dao.PersonDAO;
+import dao.UserDAO;
+import jakarta.persistence.Query;
+import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 
 import java.sql.*;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.TreeMap;
 
 /**
@@ -15,268 +27,221 @@ import java.util.TreeMap;
  * @date 03.04.2023 23:54
  */
 public class CollectionDatabaseHandler {
-    private final Connection connection;
-//    private final SessionFactory sessionFactory=Application.SessionFactory;
+    private SessionFactory sessionFactory;
 
-    public CollectionDatabaseHandler(Connection connection) {
-        this.connection = connection;
+    public CollectionDatabaseHandler(SessionFactory sessionFactory) {
+        this.sessionFactory=sessionFactory;
     }
     /**
-     *Работает
+     *Ready
      * @param labWork
      * @throws SQLException
      */
     public void insertRowNOTid(LabWork labWork) throws SQLException{
-        String sqlSeq="Select nextval('all_item_id')";
-        PreparedStatement ps = connection.prepareStatement(sqlSeq);
-        ResultSet rs= ps.executeQuery();
-        rs.next();
-        int curren_id=rs.getInt(1);
-        rs.close();
-        ps.close();
+        Session session = sessionFactory.openSession();
+        UserDAO userDAO =this.findUser(labWork.getOwner());
+        PersonDAO personDAO = new PersonDAO(labWork);
+        LocationDAO locationDAO = new LocationDAO(labWork);
+        LabWorkDAO labWorkDAO=new LabWorkDAO(labWork);
+        labWorkDAO.setPersonDAO(personDAO);
+        labWorkDAO.setLocationDAO(locationDAO);
 
-        String sql = "INSERT INTO LABWORKCOLLECTION (name, coordinate_x, coordinate_y, creation_date, minimalPoint, maximumPoint, " +
-                "personalQualitiesMaximum, difficulty,Owner,lab_work_id) Values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        ps = connection.prepareStatement(sql);
-        ps.setString(1, labWork.getName());
-        ps.setLong(2, labWork.getCoordinates().getX());
-        ps.setDouble(3, labWork.getCoordinates().getY());
-        ps.setTimestamp(4, Timestamp.valueOf(labWork.getCreationDate().toLocalDateTime()));
-        ps.setInt(5, labWork.getMinimalPoint());
-        ps.setDouble(6, labWork.getMaximumPoint());
-        ps.setInt(7, labWork.getPersonalQualitiesMaximum());
-        ps.setString(8,labWork.getDifficulty().toString());
-        ps.setString(9,labWork.getOwner());
-        ps.setInt(10,curren_id);
-        ps.executeUpdate();
-        ps.close();
-        sql="INSERT INTO PERSON_OF_LABWORK (PersonName,PersonHeight,PersonPassportID,person_id,Owner) values (?,?,?,?,?)";
-        ps=connection.prepareStatement(sql);
-        ps.setString(1, labWork.getPerson().getName());
-        ps.setFloat(2, labWork.getPerson().getHeight());
-        ps.setString(3, labWork.getPerson().getPassportID());
-        ps.setInt(4,curren_id);
-        ps.setString(5, labWork.getOwner());
-        ps.executeUpdate();
-        ps.close();
-        sql="INSERT INTO LOCATION_OF_LABWORK(LocationX,LocationY,LocationName,location_id,Owner) values (?,?,?,?,?)";
-        ps=connection.prepareStatement(sql);
-        ps.setInt(1, labWork.getPerson().getLocation().getX());
-        ps.setFloat(2, labWork.getPerson().getLocation().getY());
-        ps.setString(3, labWork.getPerson().getLocation().getName());
-        ps.setInt(4,curren_id);
-        ps.setString(5, labWork.getOwner());
-        ps.executeUpdate();
-        ps.close();
+        personDAO.setOwner(userDAO);
+        personDAO.setLabWorkDAO(labWorkDAO);
+        locationDAO.setOwner(userDAO);
+        locationDAO.setLabWorkDAO(labWorkDAO);
+        labWorkDAO.setOwner(userDAO);
+
+        session.beginTransaction();
+        session.persist(personDAO);
+        session.persist(locationDAO);
+        session.persist(labWorkDAO);
+        session.getTransaction().commit();
+        session.close();
     }
 
     /**
-     *Работает
+     * Ready
+     * @param userData
+     * @return
+     */
+    public UserDAO findUser(UserData userData){
+        Session session = sessionFactory.openSession();
+        String sql = "From users_test";
+        List<UserDAO> users = session.createQuery(sql).list();
+        for (Iterator<UserDAO> it = users.iterator(); it.hasNext();) {
+            UserDAO user = (UserDAO) it.next();
+            if(user.getName().equals(userData.getLogin())){
+                session.close();
+                return user;
+            }
+        }
+
+        session.close();
+        return null;
+    }
+
+    /**
+     * READY
      * @param labWork
      * @throws SQLException
      */
     public void replaceRow(LabWork labWork) throws SQLException {
-        String sql = "UPDATE LABWORKCOLLECTION SET(name, coordinate_x, coordinate_y, minimalPoint, maximumPoint, " +
-                "personalQualitiesMaximum, difficulty)= (?, ?, ?, ?, ?, ?, ?)" +
-                "WHERE lab_work_id=?";
-        PreparedStatement ps = connection.prepareStatement(sql);
-        ps.setString(1, labWork.getName());
-        ps.setLong(2, labWork.getCoordinates().getX());
-        ps.setDouble(3, labWork.getCoordinates().getY());
-        ps.setLong(4, labWork.getMinimalPoint());
-        ps.setDouble(5, labWork.getMaximumPoint());
-        ps.setInt(6, labWork.getPersonalQualitiesMaximum());
-        ps.setString(7,labWork.getDifficulty().toString());
-        ps.setInt(8,labWork.getId());
-        ps.executeUpdate();
-        ps.close();
-        sql="UPDATE PERSON_OF_LABWORK SET(PersonName,PersonHeight,PersonPassportID)= (?,?,?)"+"WHERE person_id=?";
-        ps = connection.prepareStatement(sql);
-        ps.setString(1, labWork.getPerson().getName());
-        ps.setFloat(2, labWork.getPerson().getHeight());
-        ps.setString(3, labWork.getPerson().getPassportID());
-        ps.setInt(4,labWork.getId());
-        ps.executeUpdate();
-        ps.close();
-        sql="UPDATE LOCATION_OF_LABWORK SET(LocationX,LocationY,LocationName) = (?,?,?)"+"WHERE location_id=?";
-        ps = connection.prepareStatement(sql);
-        ps.setInt(1, labWork.getPerson().getLocation().getX());
-        ps.setFloat(2, labWork.getPerson().getLocation().getY());
-        ps.setString(3, labWork.getPerson().getLocation().getName());
-        ps.setInt(4,labWork.getId());
-        ps.executeUpdate();
-        ps.close();
+        Session session=sessionFactory.openSession();
+        LabWorkDAO labWorkDAO=session.get(LabWorkDAO.class, labWork.getId());
+        LocationDAO locationDAO=labWorkDAO.getLocationDAO();
+        PersonDAO personDAO=labWorkDAO.getPersonDAO();
+        UserDAO userDAO=labWorkDAO.getOwner();
+
+        locationDAO.setOwner(userDAO);
+        personDAO.setOwner(userDAO);
+
+        labWorkDAO.update(labWork);
+        locationDAO.update(labWork);
+        personDAO.update(labWork);
+        session.beginTransaction();
+        session.merge(locationDAO);
+        session.merge(personDAO);
+        session.merge(labWorkDAO);
+        session.getTransaction().commit();
+        session.close();
     }
 
     /**
-     *Работает
+     *READY
      * @param id
      * @throws SQLException
      */
     public void deleteRowById(Integer id) throws SQLException {
-        String sql = "DELETE FROM LABWORKCOLLECTION WHERE lab_work_id = ?";
-        PreparedStatement ps = connection.prepareStatement(sql);
-        ps.setInt(1, id);
-        int delRows = ps.executeUpdate();
-        ps.close();
-        sql = "DELETE FROM PERSON_OF_LABWORK WHERE person_id = ?";
-        ps = connection.prepareStatement(sql);
-        ps.setInt(1, id);
-        int delRows2 = ps.executeUpdate();
-        ps.close();
-        sql = "DELETE FROM LOCATION_OF_LABWORK WHERE location_id = ?";
-        ps = connection.prepareStatement(sql);
-        ps.setInt(1, id);
-        int delRows3 = ps.executeUpdate();
-        ps.close();
-
-        if (delRows == 1 && delRows2 == 1  && delRows3 == 1) {
-            System.out.println("Строка была удалена.");
-        } else System.out.println("Не было удалено строк.");
-
+        Session session=sessionFactory.openSession();
+          LabWorkDAO labWorkDAO=session.get(LabWorkDAO.class,id);
+          session.beginTransaction();
+          session.remove(labWorkDAO);
+          session.getTransaction().commit();
+          session.close();
     }
     /**
-     * работает
+     * Ready
      * @param id
      * @param userData
      * @return
      * @throws SQLException
      */
     public boolean isOwner(Integer id, UserData userData) throws SQLException {
-        String sql = "SELECT * FROM LABWORKCOLLECTION WHERE lab_work_id = ? AND OWNER = ?";
-        PreparedStatement ps = connection.prepareStatement(sql);
-        ps.setInt(1, id);
-        ps.setString(2, userData.getLogin());
-        ResultSet rs = ps.executeQuery();
-        return rs.isBeforeFirst();
+        Session session=sessionFactory.openSession();
+        UserDAO userDAO=findUser(userData);
+        for(LabWorkDAO labWorkDAO : userDAO.getLabWorksDAO()){
+            if(labWorkDAO.getId()==id){
+                session.close();
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
-     * работает
+     * Ready
      * @param labWork
      * @return
      * @throws SQLException
      */
     public Integer getIdByLabWork(LabWork labWork) throws SQLException {
-        String sql = "SELECT lab_work_id FROM LABWORKCOLLECTION WHERE name = ? AND coordinate_x = ?";
-        PreparedStatement ps = connection.prepareStatement(sql);
-        ps.setString(1, labWork.getName());
-        ps.setLong(2, labWork.getCoordinates().getX());
-        ResultSet rs = ps.executeQuery();
-        if(rs.next()){
-            return rs.getInt(1);
+        Session session = sessionFactory.openSession();
+        String hql="SELECT id FROM labWork_test WHERE name=:name and coordinateX=:coordinateX";
+        Query query = session.createQuery(hql);
+        query.setParameter("name", labWork.getName()).setParameter("coordinateX",labWork.getCoordinates().getX());
+        List<Integer> labWorkDAOS = query.getResultList();
+        session.close();
+        return labWorkDAOS.get(0);
         }
-        return null;
-    }
-
     /**
-     * работает
-     * @param id
-     * @return
-     * @throws SQLException
-     */
-    public LabWork getLabWorkById(Integer id) throws SQLException {
-        String sql = "Select * from LABWORKCOLLECTION " +
-                "    join PERSON_OF_LABWORK on LABWORKCOLLECTION.lab_work_id=PERSON_OF_LABWORK.person_id" +
-                "    join LOCATION_OF_LABWORK on LABWORKCOLLECTION.lab_work_id=LOCATION_OF_LABWORK.location_id WHERE lab_work_id = ?";
-        PreparedStatement ps = connection.prepareStatement(sql);
-        ps.setInt(1, id);
-        ResultSet rs = ps.executeQuery();
-        if (rs.next()) {
-            return this.createLabWorkFromCurrentRow(rs);
-        }
-        return null;
-    }
-
-    /**
-     * работает
+     * READY
      * @param userData
      * @throws SQLException
      */
-    public void deleteAllOwned(UserData userData) throws SQLException {
-        String sql = "DELETE FROM LABWORKCOLLECTION WHERE OWNER = ?";
-        PreparedStatement ps = connection.prepareStatement(sql);
-        ps.setString(1, userData.getLogin());
-        int delRows = ps.executeUpdate();
-        ps.close();
-
-         sql = "DELETE FROM PERSON_OF_LABWORK WHERE OWNER = ?";
-         ps = connection.prepareStatement(sql);
-        ps.setString(1, userData.getLogin());
-        int delRows2 = ps.executeUpdate();
-        ps.close();
-
-         sql = "DELETE FROM LOCATION_OF_LABWORK WHERE OWNER = ?";
-         ps = connection.prepareStatement(sql);
-        ps.setString(1, userData.getLogin());
-        int delRows3 = ps.executeUpdate();
-        ps.close();
-        System.out.println("Было удалено " + delRows+delRows2+delRows3 + " строк.");
+    public void deleteAllOwned(UserData userData){
+        UserDAO userDAO=this.findUser(userData);
+        Session session=sessionFactory.openSession();
+        List<LabWorkDAO> labWorkDAOS=userDAO.getLabWorksDAO();
+        List<LocationDAO> locationDAOS=userDAO.getLocationsDAO();
+        List<PersonDAO> personDAOS=userDAO.getPersonsDAO();
+        session.beginTransaction();
+        for(LabWorkDAO labWorkDAO : labWorkDAOS) {
+            session.remove(labWorkDAO);
+        session.flush();
+        }
+        for(LocationDAO locationDAO : locationDAOS) {
+                session.remove(locationDAO);
+        }
+        session.flush();
+        for(PersonDAO personDAO : personDAOS) {
+            session.remove(personDAO);
+        }
+        session.flush();
+        session.getTransaction().commit();
+        session.close();
     }
 
     /**
-     *Работает
+     * READY
      * @return
      * @throws SQLException
      */
     public LabWork[] loadInMemory() throws SQLException {
         TreeMap<Integer, LabWork> treeMap = new TreeMap<>();
-        String sql = "Select * from LABWORKCOLLECTION " +
-                "    join PERSON_OF_LABWORK on LABWORKCOLLECTION.lab_work_id=PERSON_OF_LABWORK.person_id" +
-                "    join LOCATION_OF_LABWORK on LABWORKCOLLECTION.lab_work_id=LOCATION_OF_LABWORK.location_id";
-        Statement statement = connection.createStatement();
-        ResultSet rs = statement.executeQuery(sql);
-        if (rs.isBeforeFirst()) {
-            while (rs.next()) {
-                LabWork labWork = this.createLabWorkFromCurrentRow(rs);
-                treeMap.put(labWork.getId(), labWork);
-            }
+        Session session = sessionFactory.openSession();
+        String sql = "select distinct t.id,t.name,t.coordinateX,t.coordinateY,t.creationDate,t.minimalPoint" +
+                ",t.maximumPoint,t.personalQualitiesMaximum,t.difficulty,p.name,p.height,p.passportId," +
+                "l.locationX,l.locationY,l.name,c.name,c.passwordDigest from labWork_test t " +
+                "left join  t.locationDAO l left join t.personDAO p left join t.creator c";
+        List<Object[]> rows = session.createQuery(sql).list();
+
+        for(Object[] row : rows) {
+            Integer id=Integer.valueOf(row[0].toString());
+            String name = (row[1].toString());
+            Long coordinate_x=Long.valueOf(row[2].toString());
+            Double coordinate_y=Double.valueOf(row[3].toString());
+
+            String pattern = "yyyy-MM-dd'T'HH:mm:ss";
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern);
+            LocalDateTime localDateTime = LocalDateTime.from(formatter.parse(row[4].toString().substring(0,19)));
+            ZonedDateTime creationDate = Timestamp.valueOf(localDateTime).toLocalDateTime().atZone(ZoneId.of("UTC+03:00"));
+
+            //ZonedDateTime creationDate=Timestamp.valueOf(row[4].toString()).toLocalDateTime().atZone(ZoneId.of("UTC+03:00"));
+            Integer minimalPoint=Integer.valueOf(row[5].toString());
+            Double maximumPoint=Double.valueOf(row[6].toString());
+            Integer personalQualitiesMaximum=Integer.valueOf(row[7].toString());
+            Difficulty difficulty=Difficulty.valueOf(row[8].toString());
+            String personName=(row[9].toString());
+            Float personHeight=Float.valueOf(row[10].toString());
+            String personPassportID=(row[11].toString());
+            Integer locationX=Integer.valueOf(row[12].toString());
+            Float locationY=Float.valueOf(row[13].toString());
+            String locationName=(row[14].toString());
+            String ownerName=(row[15].toString());
+            String ownerPassword=(row[16].toString());
+            LabWork labWork=LabWork.createLabWork(id,name,new Coordinates(coordinate_x,coordinate_y),creationDate,minimalPoint,maximumPoint,personalQualitiesMaximum,difficulty,new Person(personName,personHeight,personPassportID,new Location(locationX,locationY,locationName)),new UserData(ownerName,ownerPassword));
+            treeMap.put(labWork.getId(),labWork);
         }
+        session.close();
         return treeMap.values().toArray(new LabWork[0]);
     }
 
     /**
-     *Работает
-     * @param rs
-     * @return
-     * @throws SQLException
-     */
-    private LabWork createLabWorkFromCurrentRow(ResultSet rs) throws SQLException {
-        Integer id=rs.getInt(1);
-        String name = rs.getString(2);
-        Long coordinate_x=rs.getLong(3);
-        Double coordinate_y=rs.getDouble(4);
-        ZonedDateTime creationDate=rs.getTimestamp(5).toLocalDateTime().atZone(ZoneId.of("UTC+03:00"));
-        Integer minimalPoint=rs.getInt(6);
-        Double maximumPoint=rs.getDouble(7);
-        Integer personalQualitiesMaximum=rs.getInt(8);
-        Difficulty difficulty=Difficulty.valueOf(rs.getString(9));
-        String personName=rs.getString(12);
-        Float personHeight=rs.getFloat(13);
-        String personPassportID=rs.getString(14);
-        Integer locationX=rs.getInt(17);
-        Float locationY=rs.getFloat(18);
-        String locationName=rs.getString(19);
-        String owner=rs.getString(10);
-        return LabWork.createLabWork(id,name,new Coordinates(coordinate_x,coordinate_y),creationDate,minimalPoint,maximumPoint,personalQualitiesMaximum,difficulty,new Person(personName,personHeight,personPassportID,new Location(locationX,locationY,locationName)),owner);
-
-    }
-
-    /**
-     * Работает
+     * READY
      * @param userData
      * @return
      * @throws SQLException
      */
-    public Integer[] getAllOwner(UserData userData) throws SQLException {
-        String sql = "SELECT * FROM LABWORKCOLLECTION WHERE OWNER = ?";
-        PreparedStatement ps = connection.prepareStatement(sql);
-        ps.setString(1, userData.getLogin());
-        ResultSet rs = ps.executeQuery();
+    public Integer[] getAllOwner(UserData userData)  {
+        Session session= sessionFactory.openSession();
+        UserDAO userDAO=this.findUser(userData);
+        List<LabWorkDAO> labWorkDAOS = userDAO.getLabWorksDAO();
         ArrayList<Integer> ids = new ArrayList<>();
-        while (rs.next()) {
-            ids.add(rs.getInt(1));
+        for (LabWorkDAO labWorkDAO : labWorkDAOS) {
+            ids.add(labWorkDAO.getId());
         }
+        session.close();
         return ids.toArray(new Integer[0]);
     }
 }

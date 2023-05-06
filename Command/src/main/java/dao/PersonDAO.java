@@ -1,6 +1,8 @@
 package dao;
 
+import collection.LabWork;
 import collection.Person;
+import database.UserData;
 import jakarta.persistence.*;
 
 import java.io.Serializable;
@@ -16,10 +18,17 @@ public class PersonDAO implements Serializable {
     public PersonDAO(){
 
     }
-    public PersonDAO(Person person){
-        this.name=person.getName();
-        this.height=person.getHeight();
-        this.passportId=person.getPassportID();
+    public PersonDAO(LabWork labWork){
+        this.name=labWork.getPerson().getName();
+        this.height=labWork.getPerson().getHeight();
+        this.passportId=labWork.getPerson().getPassportID();
+        this.creator=new UserDAO(labWork.getUserData());
+    }
+
+    public void update(LabWork labWork){
+        this.name=labWork.getPerson().getName();
+        this.height=labWork.getPerson().getHeight();
+        this.passportId=labWork.getPerson().getPassportID();
     }
     @Column(name="name")
     private String name;
@@ -27,11 +36,11 @@ public class PersonDAO implements Serializable {
     private float height;
     @Column(name="passportID")
     private String passportId;
-    @ManyToOne(optional = false, cascade = CascadeType.ALL)
+    @ManyToOne(optional = false, cascade = CascadeType.MERGE )
     @JoinColumn(name="creator", nullable=false)
     private UserDAO creator;
 
-    @OneToOne (optional=false, mappedBy="personDAO")
+    @OneToOne(optional=false, mappedBy="personDAO")
     private LabWorkDAO labWorkDAO;
     @Id
     @GeneratedValue(strategy=GenerationType.IDENTITY)
@@ -76,5 +85,23 @@ public class PersonDAO implements Serializable {
 
     public void setId(int id) {
         this.id = id;
-    }
+
+
 }
+
+    public UserDAO getCreator() {
+        return creator;
+    }
+
+    public void setCreator(UserDAO creator) {
+        this.creator = creator;
+    }
+
+    public LabWorkDAO getLabWorkDAO() {
+        return labWorkDAO;
+    }
+
+    public void setLabWorkDAO(LabWorkDAO labWorkDAO) {
+        this.labWorkDAO = labWorkDAO;
+    }
+    }

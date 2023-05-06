@@ -121,7 +121,7 @@ public class UpdateElementCommand extends Command{
                         fields[i - 1] = subStr[0];
                         values[i - 1] = subStr[1];
                     }
-                    LabWork labWork = LabWorkFieldReplacer.update(cdh.getLabWorkById(id), fields, values, printStream);
+                    LabWork labWork = LabWorkFieldReplacer.update(collectionManager.getLabWork(id), fields, values, printStream);
                     cdh.replaceRow(labWork);
                     collectionManager.removeKey(labWork.getId());
                     collectionManager.insertWithId(labWork.getId(), labWork, printStream);

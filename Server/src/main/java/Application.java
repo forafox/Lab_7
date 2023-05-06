@@ -30,13 +30,11 @@ public class Application {
     private static final String RELATIVE_PATH_TO_HIBERNATE_CONFIG = "hibernate.cfg.xml";
     private static final Logger rootLogger = LogManager.getRootLogger();
 
-    private Connection dbConnection;
-
     public void start(int port){
         this.createDatabaseConnection();
         UserDatabaseHandler udh=new UserDatabaseHandler(sessionFactory);
         //UserDatabaseHandler udh=new UserDatabaseHandler(dbConnection);
-        CollectionDatabaseHandler cdh=new CollectionDatabaseHandler(dbConnection);
+        CollectionDatabaseHandler cdh=new CollectionDatabaseHandler(sessionFactory);
         try {
             LabWork[] labWorks = cdh.loadInMemory();
             CollectionManager collectionManager = new CollectionManager(labWorks);
@@ -96,23 +94,10 @@ public class Application {
             System.exit(-1);
         }
         rootLogger.info("Login and password were uploaded from resources");
-        //
-//        ClassLoader classLoader = Application.class.getClassLoader();
-//        File f = new File(classLoader.getResource(RELATIVE_PATH_TO_HIBERNATE_CONFIG).getFile());
-        // SessionFactory sessionFactory = new AnnotationConfiguration().configure(f).buildSessionFactory();
-         sessionFactory = HibernateUtil.getSessionFactory(jdbcHeliosURL, login, password);
-//        Session session = sessionFactory.openSession();
-//        session.close();
-        //
-        DatabaseConnection databaseConnection = new DatabaseConnection(jdbcHeliosURL, login, password);
-
-        /////
-
-        /////
         try {
-            dbConnection = databaseConnection.connectToDatabase();
+            sessionFactory = HibernateUtil.getSessionFactory(jdbcHeliosURL, login, password);
             rootLogger.info("Соединение с бд установлено");
-        }catch (SQLException ex){
+        }catch (Exception ex){
             rootLogger.error("Соединение с бд не установлено. Завершение работы сервера");
             rootLogger.error(ex.getMessage());
             System.exit(-1);

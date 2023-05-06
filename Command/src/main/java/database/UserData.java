@@ -24,6 +24,10 @@ public class UserData implements Serializable {
         this.isNewUser = isNewUser;
         this.isConnected = false;
     }
+    public UserData(String login,String password){
+        this.login=login;
+        this.password=password;
+    }
 
     public String getLogin() {
         return login;

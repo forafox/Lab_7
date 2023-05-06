@@ -1,6 +1,8 @@
 package dao;
 
+import collection.LabWork;
 import collection.Location;
+import database.UserData;
 import jakarta.persistence.*;
 
 import java.io.Serializable;
@@ -16,10 +18,22 @@ public class LocationDAO implements Serializable {
     public LocationDAO(){
 
     }
-    public LocationDAO(Location location){
-        this.name=location.getName();
-        this.locationX=location.getX();
-        this.locationY=location.getY();
+    public void update(LabWork labWork){
+        this.name=labWork.getPerson().getLocation().getName();
+        this.locationX=labWork.getPerson().getLocation().getX();
+        this.locationY=labWork.getPerson().getLocation().getY();
+    }
+    public LocationDAO(LabWork labWork){
+        this.name=labWork.getPerson().getLocation().getName();
+        this.locationX=labWork.getPerson().getLocation().getX();
+        this.locationY=labWork.getPerson().getLocation().getY();
+        this.creator=new UserDAO(labWork.getUserData());
+    }
+    public LocationDAO(String name, int locationX, double locationY, UserData userData){
+        this.name=name;
+        this.locationX=locationX;
+        this.locationY=locationY;
+        this.creator=new UserDAO(userData);
     }
     @Column(name="locationX")
     private int locationX;
@@ -30,7 +44,7 @@ public class LocationDAO implements Serializable {
 
     @OneToOne (optional=false, mappedBy="locationDAO")
     private LabWorkDAO labWorkDAO;
-    @ManyToOne(optional = false, cascade = CascadeType.ALL)
+    @ManyToOne(optional = false, cascade = CascadeType.MERGE )
     @JoinColumn(name="creator", nullable=false)
     private UserDAO creator;
 
@@ -78,4 +92,19 @@ public class LocationDAO implements Serializable {
         this.id = id;
     }
 
+    public LabWorkDAO getLabWorkDAO() {
+        return labWorkDAO;
+    }
+
+    public void setLabWorkDAO(LabWorkDAO labWorkDAO) {
+        this.labWorkDAO = labWorkDAO;
+    }
+
+    public UserDAO getCreator() {
+        return creator;
+    }
+
+    public void setCreator(UserDAO creator) {
+        this.creator = creator;
+    }
 }

@@ -285,8 +285,8 @@ public class LabWork implements Serializable {
         this.person = person;
     }
 
-    public String getOwner(){
-        return user_login;
+    public UserData getOwner(){
+        return userData;
     }
     public void setOwner(String owner){
         this.user_login=owner;

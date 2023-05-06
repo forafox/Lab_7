@@ -174,6 +174,9 @@ public class CollectionManager {
             treeMap.put(id, labWork);
         } else printStream.print("Элемент с данным ключом уже существует");
     }
+    public LabWork getLabWork(int id){
+        return treeMap.get(id);
+    }
 
     /**
      * Метод, возращаюзий рандомное значение id ( в пределах 10.000)
