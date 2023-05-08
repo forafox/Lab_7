@@ -147,7 +147,6 @@ public class CommandInvoker {
         serverCommands.put("info", new InfoCommand(collectionManager));//y
         serverCommands.put("show", new ShowCommand(collectionManager));//y
         serverCommands.put("clear", new ClearCommand(collectionManager,cdh));//y
-        serverCommands.put("save", new SaveCommand(collectionManager, inputFile));//y
         serverCommands.put("help", new HelpCommand(serverCommands));//y
         serverCommands.put("insert", new InsertElementCommand(collectionManager,cdh));//y
         serverCommands.put("update", new UpdateElementCommand(collectionManager,cdh));//y

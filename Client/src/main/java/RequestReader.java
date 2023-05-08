@@ -39,7 +39,7 @@ public class RequestReader {
                     rootLogger.info("Получение данных окончено");
                 }
                 result = Bytes.concat(result, Arrays.copyOf(data, data.length - 1));
-                 buffer= ByteBuffer.wrap(result);
+                buffer= ByteBuffer.wrap(result);
             }
 
          return buffer;

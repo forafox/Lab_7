@@ -17,6 +17,7 @@ public class UserData implements Serializable {
     private boolean isConnected;
     private InetAddress inetAddress;
     private Integer port;
+    private String salt;
 
     private CommandContainer commandContainer;
 
@@ -90,5 +91,13 @@ public class UserData implements Serializable {
         return "UserData{" +
                 "login='" + login + '\'' +
                 '}';
+    }
+
+    public String getSalt() {
+        return salt;
+    }
+
+    public void setSalt(String salt) {
+        this.salt = salt;
     }
 }

@@ -11,7 +11,7 @@ public class MainClient {
     public static void main(String[] args){
         Application application;
         if (args.length != 0) {
-            application = new Application(Integer.parseInt(args[0]));
+            application = new Application(java.lang.Integer.parseInt(args[0]));
         }else{
             System.out.println("Please enter the port value...\nThe value must be an integer!");
             UserIO userIO = new UserIO();

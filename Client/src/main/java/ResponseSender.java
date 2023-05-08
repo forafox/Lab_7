@@ -43,15 +43,15 @@ public class ResponseSender {
 
         for(int i = 0; i < ret.length; i++) {
             byte[] chunk = ret[i];
-            rootLogger.info("Адрес для отправки: " + inetSocketAddress.toString());
+          //  rootLogger.info("Адрес для отправки: " + inetSocketAddress.toString());
             if (i == ret.length - 1) {
                 var lastChunk = Bytes.concat(chunk, new byte[]{1});
                 clientChannel.send(ByteBuffer.wrap(lastChunk), inetSocketAddress);
-                rootLogger.info("Последний чанк размером " + lastChunk.length + " отправлен на сервер.");
+               // rootLogger.info("Последний чанк размером " + lastChunk.length + " отправлен на сервер.");
             } else {
                 var answer = Bytes.concat(chunk, new byte[]{0});
                 clientChannel.send(ByteBuffer.wrap(answer), inetSocketAddress);
-                rootLogger.info("Чанк размером " + answer.length + " отправлен на сервер.");
+               // rootLogger.info("Чанк размером " + answer.length + " отправлен на сервер.");
             }
         }
 

@@ -14,6 +14,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.*;
 import java.net.*;
 import java.nio.ByteBuffer;
+import java.security.NoSuchAlgorithmException;
 import java.util.Locale;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
@@ -28,8 +29,6 @@ public class Application {
     CommandInvoker commandInvoker;
     private InetSocketAddress inetSocketAddress;
     private UserData userData;
-    private InetAddress inetAddress;
-
 
     /**
      * Конструктор.
@@ -98,7 +97,7 @@ public class Application {
         }
     }
 
-    private boolean authenticate(ResponseSender responseSender, RequestReader requestReader) throws IOException, InterruptedException, NoSuchElementException {
+    private boolean authenticate(ResponseSender responseSender, RequestReader requestReader) throws IOException, InterruptedException, NoSuchElementException, NoSuchAlgorithmException {
         Scanner scanner = new Scanner(System.in);
         Boolean isNewUser = null;
         System.out.println("Выберите действие:\n1) Авторизоваться\n2) Создать нового пользователя");
@@ -141,7 +140,7 @@ public class Application {
             }
         }
         userData.setLogin(login);
-        userData.setPassword(DataEncryptor.sha256(password));
+        userData.setPassword(password);
 
         responseSender.sendUserDataOLD(userData,inetSocketAddress);
         ByteBuffer byteBufferOLD =requestReader.receiveBufferDataOLD();

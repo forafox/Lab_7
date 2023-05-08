@@ -1,9 +1,6 @@
 package collection;
 
 
-import workWithFile.FileManager;
-import workWithFile.XmlParser;
-
 import java.io.PrintStream;
 import java.time.Instant;
 import java.time.ZonedDateTime;
@@ -347,20 +344,7 @@ public class CollectionManager {
     public boolean containsKey(Integer id) {
         return treeMap.containsKey(id);
     }
-    /**
-     * Метод, сохраняющий элементы коллекции в формате XML
-     *
-     * @param filePath путь до файла, куда следует сохранить элементы коллекции
-     */
-    public void save(String filePath) {
-        XmlParser xmlParser = new XmlParser();
-        FileManager fileManager = new FileManager();
 
-        LabWork[] labWorks = new LabWork[treeMap.size()];
-        labWorks = treeMap.values().toArray(labWorks);
-        String str = xmlParser.parseToXml(labWorks);
-        fileManager.writeToFile(str, filePath);
-    }
 
     /**
      *

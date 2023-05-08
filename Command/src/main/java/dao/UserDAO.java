@@ -16,7 +16,7 @@ import java.util.List;
 @Table(name="users_test", uniqueConstraints={@UniqueConstraint(columnNames={"id"})})
 public class UserDAO implements Serializable {
     public UserDAO() {
-        this.salt="what_is_it";
+
     }
 
     public UserDAO(UserData user) {
@@ -33,10 +33,10 @@ public class UserDAO implements Serializable {
     @Column(name="name", length=40, unique=true, nullable=false)
     private String name;
 
-    @Column(name="password_digest", length=64, nullable=false)
+    @Column(name="password_digest", length=100, nullable=false)
     private String passwordDigest;
 
-    @Column(name="salt", length=10)
+    @Column(name="salt", length=8)
     private String salt;
 
     @OneToMany(mappedBy = "creator" ,fetch = FetchType.EAGER)

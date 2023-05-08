@@ -1,18 +1,20 @@
 import collection.CollectionManager;
 import collection.LabWork;
 import commands.CommandInvoker;
+import dao.LabWorkDAO;
+import dao.LocationDAO;
+import dao.PersonDAO;
+import dao.UserDAO;
 import database.CollectionDatabaseHandler;
-import database.DatabaseConnection;
 import database.UserDatabaseHandler;
 import org.apache.commons.compress.utils.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.hibernate.SessionFactory;
-//import utils.HibernateUtil;
-import utils.HibernateUtil;
+import org.hibernate.cfg.Configuration;
+import org.hibernate.service.ServiceRegistry;
 
 import java.io.*;
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
@@ -26,6 +28,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public class Application {
     private static SessionFactory sessionFactory;
+    private static ServiceRegistry serviceRegistry;
     private static final String RELATIVE_PATH_TO_CREDENTIALS = "data/credentials.txt";
     private static final String RELATIVE_PATH_TO_HIBERNATE_CONFIG = "hibernate.cfg.xml";
     private static final Logger rootLogger = LogManager.getRootLogger();
@@ -64,9 +67,7 @@ public class Application {
     private void createDatabaseConnection(){
         Scanner scanner=new Scanner(System.in);
         rootLogger.info("Введите данные для входа. Логин и Пароль");
-        //String jdbcHeliosURL="jdbc:postgresql://pg:5444/studs";
         String jdbcHeliosURL="jdbc:postgresql://localhost:5432/studs";
-        //String jdbcLocalURL="jdbc:postgresql://localhost:5489/studs";
         String login="";
         String password="";
         try {
@@ -95,7 +96,12 @@ public class Application {
         }
         rootLogger.info("Login and password were uploaded from resources");
         try {
-            sessionFactory = HibernateUtil.getSessionFactory(jdbcHeliosURL, login, password);
+            Configuration cfg=new Configuration().configure("hibernate.cfg.xml");
+            cfg.addAnnotatedClass(LabWorkDAO.class);
+            cfg.addAnnotatedClass(LocationDAO.class);
+            cfg.addAnnotatedClass(PersonDAO.class);
+            cfg.addAnnotatedClass(UserDAO.class);
+            sessionFactory=cfg.buildSessionFactory();
             rootLogger.info("Соединение с бд установлено");
         }catch (Exception ex){
             rootLogger.error("Соединение с бд не установлено. Завершение работы сервера");
