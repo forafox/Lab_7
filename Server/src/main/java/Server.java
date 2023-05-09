@@ -13,6 +13,7 @@ import java.util.concurrent.*;
  * @date 04.04.2023 0:24
  */
 public class Server {
+    private final String ADMIN_CHECK_PASSWORD="15";
     private static final Logger rootLogger = LogManager.getRootLogger();
     private final RequestReader requestReader;
     private final ResponseSender responseSender;
@@ -88,7 +89,9 @@ public class Server {
 
         if (!userData.getIsConnected()) {
             if (userData.getIsNewUser()) {
-                commandProcessor.getUdh().addUser(userData);
+                if(userData.getAdminCheckPassword()==null || userData.getAdminCheckPassword().equals(ADMIN_CHECK_PASSWORD)){
+                        commandProcessor.getUdh().addUser(userData);
+                    }
             }
             if (!userData.getIsConnected()) {
                 commandProcessor.getUdh().verifyUser(userData);

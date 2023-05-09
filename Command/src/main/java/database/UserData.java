@@ -19,6 +19,8 @@ public class UserData implements Serializable {
     private Integer port;
     private String salt;
 
+    private UserStatus userStatus;
+    private String adminCheckPassword=null;
     private CommandContainer commandContainer;
 
     public UserData(boolean isNewUser) {
@@ -99,5 +101,21 @@ public class UserData implements Serializable {
 
     public void setSalt(String salt) {
         this.salt = salt;
+    }
+
+    public String getAdminCheckPassword() {
+        return adminCheckPassword;
+    }
+
+    public void setAdminCheckPassword(String adminCheckPassword) {
+        this.adminCheckPassword = adminCheckPassword;
+    }
+
+    public UserStatus getUserStatus() {
+        return userStatus;
+    }
+
+    public void setUserStatus(UserStatus userStatus) {
+        this.userStatus = userStatus;
     }
 }

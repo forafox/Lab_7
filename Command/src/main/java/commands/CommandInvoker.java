@@ -38,6 +38,10 @@ public class CommandInvoker {
      * Коллекция команд для сервера.
      */
     private HashMap<String, Command> serverCommands;
+    /**
+     * Коллекция специальных команд для админов.
+     */
+    private HashMap<String, Command> specialCommands;
 
     /**
      * Поле, хранящее ссылку на объект класса CollectionManager.
@@ -101,7 +105,6 @@ public class CommandInvoker {
         this.userIO = userIO;
         this.labWorkFieldsReader = labWorkFieldsReader;
         this.script = script;
-
         this.putClientCommands();
     }
 
@@ -139,6 +142,7 @@ public class CommandInvoker {
         clientCommands.put("print_field_ascending_difficulty",new PrintFieldAscendingDifficultyCommand());
         clientCommands.put("group_counting_by_difficulty",new GroupCountingByDifficult());
         clientCommands.put("history",new HistoryCommand());
+        clientCommands.put("remove_user",new RemoveUser());
     }
     /**
      * Метод, добавляющий серверные команды в соответствующую коллекцию.
@@ -158,6 +162,7 @@ public class CommandInvoker {
         serverCommands.put("group_counting_by_difficulty",new GroupCountingByDifficult(collectionManager));
         serverCommands.put("history", new HistoryCommand(commandsHistoryList));
         serverCommands.put("execute_script", new ExecuteScriptCommand(collectionManager,cdh));
+        serverCommands.put("remove_user",new RemoveUser(collectionManager,cdh));
     }
     /**
      * Метод, который определяет из полученной строки команду со стороны клиента, исполняет ее и передает ей необходимые аргументы.

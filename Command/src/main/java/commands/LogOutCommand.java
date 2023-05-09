@@ -22,4 +22,14 @@ public class LogOutCommand extends Command {
     public void execute(String[] arguments, InvocationStatus invocationEnum, PrintStream printStream, UserData userData, ReadWriteLock locker) throws CannotExecuteCommandException, SQLException {
         //To DO
     }
+    /**
+     * Метод, возвращающий описание данной команды.
+     * @return Описание данной команды.
+     *
+     * @see HelpCommand
+     */
+    @Override
+    public String getDescription() {
+        return "Выход из аккаунта.";
+    }
 }

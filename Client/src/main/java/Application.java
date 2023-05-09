@@ -7,6 +7,7 @@
 
 import commands.CommandInvoker;
 import database.UserData;
+import database.UserStatus;
 import io.UserIO;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -70,7 +71,7 @@ public class Application {
                     System.out.printf("Welcome to Lab_7, %s!\n",userData.getLogin());
                     System.out.print("Type \"help\" to get a list of commands\n");
                 } else {
-                    rootLogger.warn("Неверный логин или пароль. Повторите ввод. Осталось попыток:" + --count);
+                    rootLogger.info("Неверный логин или пароль. Повторите ввод. Осталось попыток:" + --count);
                     continue;
                 }
                 rootLogger.info("Клиент готов к чтению команд.");
@@ -100,6 +101,8 @@ public class Application {
     private boolean authenticate(ResponseSender responseSender, RequestReader requestReader) throws IOException, InterruptedException, NoSuchElementException, NoSuchAlgorithmException {
         Scanner scanner = new Scanner(System.in);
         Boolean isNewUser = null;
+        UserStatus userStatus=UserStatus.SIMPLE_USER;
+        String adminCheckPassword=null;
         System.out.println("Выберите действие:\n1) Авторизоваться\n2) Создать нового пользователя");
 
         while (isNewUser == null) {
@@ -111,8 +114,23 @@ public class Application {
                         isNewUser = false;
                         break;
                     case 2:
-                        isNewUser = true;
-                        break;
+                        System.out.println("Выберите действие:\n1) Создать обычного пользователя\n2) Создать аккаунт с особыми правами(нужен особый пароль)");
+                        int result2=Integer.parseInt(scanner.nextLine().trim());
+                        switch (result2){
+                             case 1:
+                            isNewUser = true;
+                            userStatus=UserStatus.SIMPLE_USER;
+                            break;
+                            case 2:
+                                System.out.println("Введите особый пароль для добавления аккаунта с особыми правами.");
+                                adminCheckPassword=createPasswordFromUser(scanner);
+                            isNewUser = true;
+                            userStatus=UserStatus.ADMIN;
+                            break;
+                            default :
+                                rootLogger.info("Действие не распознано. Выберите способ еще раз.");
+                                break;
+                        }
                     default:
                         rootLogger.info("Действие не распознано. Выберите способ еще раз.");
                         break;
@@ -123,24 +141,15 @@ public class Application {
         }
         userData = new UserData(isNewUser);
         String login;
-        String password = null;
 
         System.out.println("Введите логин:");
         login = scanner.next().trim();
         System.out.println("Введите пароль:");
-        Console console = System.console();
-        while (password == null || password.equals("")) {
-            if (console != null) {
-                char[] arrPass = console.readPassword();
-                if (arrPass == null) {
-                    rootLogger.warn("Пароль не может быть пустым. Повторите попытку");
-                } else password = String.valueOf(arrPass);
-            } else {
-                password = scanner.next().trim();
-            }
-        }
+        String password=createPasswordFromUser(scanner);
         userData.setLogin(login);
         userData.setPassword(password);
+        userData.setAdminCheckPassword(adminCheckPassword);
+        userData.setUserStatus(userStatus);
 
         responseSender.sendUserDataOLD(userData,inetSocketAddress);
         ByteBuffer byteBufferOLD =requestReader.receiveBufferDataOLD();
@@ -195,5 +204,20 @@ public class Application {
                 }
             }
         }
+    }
+    private String createPasswordFromUser(Scanner scanner ){
+        String password=null;
+        Console console = System.console();
+        while (password == null || password.equals("")) {
+            if (console != null) {
+                char[] arrPass = console.readPassword();
+                if (arrPass == null) {
+                    rootLogger.warn("Пароль не может быть пустым. Повторите попытку");
+                } else password = String.valueOf(arrPass);
+            } else {
+                password = scanner.next().trim();
+            }
+        }
+        return password;
     }
 }

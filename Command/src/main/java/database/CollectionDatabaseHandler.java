@@ -10,8 +10,6 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 
 import java.sql.*;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -27,7 +25,7 @@ import java.util.TreeMap;
  * @date 03.04.2023 23:54
  */
 public class CollectionDatabaseHandler {
-    private SessionFactory sessionFactory;
+    private static SessionFactory sessionFactory;
 
     public CollectionDatabaseHandler(SessionFactory sessionFactory) {
         this.sessionFactory=sessionFactory;
@@ -65,7 +63,7 @@ public class CollectionDatabaseHandler {
      * @param userData
      * @return
      */
-    public UserDAO findUser(UserData userData){
+    public static UserDAO findUser(UserData userData){
         Session session = sessionFactory.openSession();
         String sql = "From users_test";
         List<UserDAO> users = session.createQuery(sql).list();
@@ -76,7 +74,26 @@ public class CollectionDatabaseHandler {
                 return user;
             }
         }
-
+        session.close();
+        return null;
+    }
+    /**
+     * Ready
+     * @param
+     * @return
+     */
+    public static UserDAO findUserByName(String  name){
+        UserDAO userDAO;
+        Session session = sessionFactory.openSession();
+        String hql=" FROM users_test WHERE name=:name";
+        Query query = session.createQuery(hql);
+        query.setParameter("name", name);
+        List<UserDAO> userDAOS = query.getResultList();
+        session.close();
+        if(!userDAOS.isEmpty()){
+            session.close();
+            return userDAOS.get(0);
+        }
         session.close();
         return null;
     }
@@ -84,9 +101,8 @@ public class CollectionDatabaseHandler {
     /**
      * READY
      * @param labWork
-     * @throws SQLException
      */
-    public void replaceRow(LabWork labWork) throws SQLException {
+    public void replaceRow(LabWork labWork){
         Session session=sessionFactory.openSession();
         LabWorkDAO labWorkDAO=session.get(LabWorkDAO.class, labWork.getId());
         LocationDAO locationDAO=labWorkDAO.getLocationDAO();
@@ -128,6 +144,10 @@ public class CollectionDatabaseHandler {
      * @throws SQLException
      */
     public boolean isOwner(Integer id, UserData userData) throws SQLException {
+        userData.setUserStatus(isAdmin(userData));
+        if(userData.getUserStatus().equals(UserStatus.ADMIN)){
+            return true;
+        }
         Session session=sessionFactory.openSession();
         UserDAO userDAO=findUser(userData);
         for(LabWorkDAO labWorkDAO : userDAO.getLabWorksDAO()){
@@ -138,6 +158,7 @@ public class CollectionDatabaseHandler {
         }
         return false;
     }
+
 
     /**
      * Ready
@@ -163,23 +184,21 @@ public class CollectionDatabaseHandler {
         UserDAO userDAO=this.findUser(userData);
         Session session=sessionFactory.openSession();
         List<LabWorkDAO> labWorkDAOS=userDAO.getLabWorksDAO();
-        List<LocationDAO> locationDAOS=userDAO.getLocationsDAO();
-        List<PersonDAO> personDAOS=userDAO.getPersonsDAO();
         session.beginTransaction();
         for(LabWorkDAO labWorkDAO : labWorkDAOS) {
             session.remove(labWorkDAO);
         session.flush();
         }
-        for(LocationDAO locationDAO : locationDAOS) {
-                session.remove(locationDAO);
-        }
-        session.flush();
-        for(PersonDAO personDAO : personDAOS) {
-            session.remove(personDAO);
-        }
-        session.flush();
         session.getTransaction().commit();
         session.close();
+    }
+
+    /**
+     *
+     */
+    public UserStatus isAdmin(UserData userData){
+        UserDAO userDAO=findUser(userData);
+        return userDAO.getUserStatus();
     }
 
     /**
@@ -234,14 +253,40 @@ public class CollectionDatabaseHandler {
      * @throws SQLException
      */
     public Integer[] getAllOwner(UserData userData)  {
-        Session session= sessionFactory.openSession();
-        UserDAO userDAO=this.findUser(userData);
-        List<LabWorkDAO> labWorkDAOS = userDAO.getLabWorksDAO();
+
         ArrayList<Integer> ids = new ArrayList<>();
+        List<LabWorkDAO> labWorkDAOS;
+        Session session= sessionFactory.openSession();
+        if(isAdmin(userData).equals(UserStatus.SIMPLE_USER)){
+        UserDAO userDAO=this.findUser(userData);
+        labWorkDAOS = userDAO.getLabWorksDAO();
+        }else{
+            String sql = "From labWork_test";
+            labWorkDAOS = session.createQuery(sql).list();
+        }
         for (LabWorkDAO labWorkDAO : labWorkDAOS) {
             ids.add(labWorkDAO.getId());
         }
         session.close();
         return ids.toArray(new Integer[0]);
     }
+    /**
+     *
+     */
+    public Integer[] removeUser(String str){
+        UserDAO userDAO=findUserByName(str);
+        ArrayList<Integer> ids = new ArrayList<>();
+        for (LabWorkDAO labWorkDAO : userDAO.getLabWorksDAO()) {
+        ids.add(labWorkDAO.getId());
+    }
+        Session session2=sessionFactory.openSession();
+        session2.beginTransaction();
+        session2.remove(userDAO);
+        session2.getTransaction().commit();
+        session2.close();
+
+        return ids.toArray(new Integer[0]);
+    }
+
+
 }

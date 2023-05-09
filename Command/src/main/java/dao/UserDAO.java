@@ -1,6 +1,7 @@
 package dao;
 
 import database.UserData;
+import database.UserStatus;
 import jakarta.persistence.*;
 
 import java.io.Serializable;
@@ -22,6 +23,7 @@ public class UserDAO implements Serializable {
     public UserDAO(UserData user) {
             this.passwordDigest=user.getLogin();
             this.passwordDigest=user.getPassword();
+            this.userStatus=user.getUserStatus().toString();
     }
 
 
@@ -39,13 +41,16 @@ public class UserDAO implements Serializable {
     @Column(name="salt", length=8)
     private String salt;
 
-    @OneToMany(mappedBy = "creator" ,fetch = FetchType.EAGER)
+    @Column(name="access",length = 11)
+    private String userStatus;
+
+    @OneToMany(mappedBy = "creator" ,fetch = FetchType.EAGER,cascade=CascadeType.MERGE,orphanRemoval = true)
     private List<LabWorkDAO> labWorks = new ArrayList<>();
 
-    @OneToMany(mappedBy = "creator" ,fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "creator" ,fetch = FetchType.EAGER,cascade=CascadeType.MERGE,orphanRemoval = true)
     private List<LocationDAO> locations = new ArrayList<>();
 
-    @OneToMany(mappedBy = "creator" ,fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "creator" ,fetch = FetchType.EAGER,cascade=CascadeType.MERGE,orphanRemoval = true)
     private List<PersonDAO> persons = new ArrayList<>();
 
     public int getId() {
@@ -103,5 +108,32 @@ public class UserDAO implements Serializable {
 
     public List<PersonDAO> getPersonsDAO() {
         return persons;
+    }
+    public UserStatus getUserStatus() {
+        return UserStatus.valueOf(userStatus);
+    }
+
+    public void setUserStatus(UserStatus userStatus) {
+        this.userStatus = userStatus.toString();
+    }
+
+    public List<LabWorkDAO> getLabWorks() {
+        return labWorks;
+    }
+
+    public List<LocationDAO> getLocations() {
+        return locations;
+    }
+
+    public void setLocations(List<LocationDAO> locations) {
+        this.locations = locations;
+    }
+
+    public List<PersonDAO> getPersons() {
+        return persons;
+    }
+
+    public void setPersons(List<PersonDAO> persons) {
+        this.persons = persons;
     }
 }

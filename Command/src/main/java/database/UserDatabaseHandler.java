@@ -14,9 +14,11 @@ import java.util.List;
  */
 public class UserDatabaseHandler {
     private SessionFactory sessionFactory;
+    private CollectionDatabaseHandler cdh;
 
     public UserDatabaseHandler(SessionFactory sessionFactory) {
         this.sessionFactory = sessionFactory;
+        cdh=new CollectionDatabaseHandler(sessionFactory);
     }
 
     public void addUser(UserData userData) {
@@ -33,6 +35,7 @@ public class UserDatabaseHandler {
             userDAO.setName(user_login);
             userDAO.setPasswordDigest(user_pass);
             userDAO.setSalt(userData.getSalt());
+            userDAO.setUserStatus(userData.getUserStatus());
             session.beginTransaction();
             session.persist(userDAO);
             session.getTransaction().commit();
@@ -53,6 +56,11 @@ public class UserDatabaseHandler {
         Query query=session.createQuery(saltValue);
         query.setParameter("username",userData.getLogin());
         List<String> rows = query.getResultList();
+        if(rows.isEmpty()){
+            userData.setIsNewUser(true);
+            session.close();
+            return;
+        }
         String str=rows.get(0);
 
         String hql="SELECT name FROM users_test WHERE name=:username and passwordDigest=:password";
@@ -65,8 +73,11 @@ public class UserDatabaseHandler {
         if (query2.getResultList().isEmpty()) {
             userData.setIsNewUser(true);
         } else {
+            userData.setUserStatus(cdh.isAdmin(userData));
             userData.setIsNewUser(false);
         }
         session.close();
     }
+
+
 }
