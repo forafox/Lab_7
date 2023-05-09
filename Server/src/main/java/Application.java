@@ -68,32 +68,32 @@ public class Application {
         Scanner scanner=new Scanner(System.in);
         rootLogger.info("Введите данные для входа. Логин и Пароль");
         String jdbcHeliosURL="jdbc:postgresql://localhost:5432/studs";
-        String login="";
-        String password="";
-        try {
-           // scanner=new Scanner(new FileReader(getClass().getClassLoader().getResource(RELATIVE_PATH_TO_CREDENTIALS).getFile()));
-            InputStream in = getClass().getResourceAsStream(RELATIVE_PATH_TO_CREDENTIALS);
-            File file = File.createTempFile("stream2file", ".tmp");
-            file.deleteOnExit();
-            try (FileOutputStream out = new FileOutputStream(file)) {
-                IOUtils.copy(in, out);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-            scanner=new Scanner(file);
-
-        }catch (IOException ex){
-            rootLogger.error(ex.getMessage());
-            rootLogger.error("Не найден файл credentials.txt с данными для входа. Завершение работы");
-            System.exit(-1);
-        }
-        try{
-            login=scanner.nextLine().trim();
-            password=scanner.nextLine().trim();
-        }catch (NoSuchElementException ex){
-            rootLogger.error("Не найдены данные для входа. Завершение работы.");
-            System.exit(-1);
-        }
+        String login="s367268";
+        String password="N7N7tRi80ue5EgUk";
+//        try {
+//           // scanner=new Scanner(new FileReader(getClass().getClassLoader().getResource(RELATIVE_PATH_TO_CREDENTIALS).getFile()));
+//            InputStream in = getClass().getResourceAsStream(RELATIVE_PATH_TO_CREDENTIALS);
+//            File file = File.createTempFile("stream2file", ".tmp");
+//            file.deleteOnExit();
+//            try (FileOutputStream out = new FileOutputStream(file)) {
+//                IOUtils.copy(in, out);
+//            } catch (IOException e) {
+//                throw new RuntimeException(e);
+//            }
+//            scanner=new Scanner(file);
+//
+//        }catch (IOException ex){
+//            rootLogger.error(ex.getMessage());
+//            rootLogger.error("Не найден файл credentials.txt с данными для входа. Завершение работы");
+//            System.exit(-1);
+//        }
+//        try{
+//            login=scanner.nextLine().trim();
+//            password=scanner.nextLine().trim();
+//        }catch (NoSuchElementException ex){
+//            rootLogger.error("Не найдены данные для входа. Завершение работы.");
+//            System.exit(-1);
+//        }
         rootLogger.info("Login and password were uploaded from resources");
         try {
             Configuration cfg=new Configuration().configure("hibernate.cfg.xml");
